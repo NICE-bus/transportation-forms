@@ -5,6 +5,7 @@ import datetime
 import io
 from PIL import Image, ImageOps
 import gspread
+import json
 from oauth2client.service_account import ServiceAccountCredentials
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas as pdf_canvas
@@ -17,8 +18,11 @@ import yagmail
 
 def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None):
     st.write("DEBUG: Preparing to send email with PDF:", pdf_file)
-    sender_email = "incidentlateslip2012@gmail.com"
-    sender_password = "zkzctpanzwtkclbf"
+    sender_email = st.secrets["email_user"]
+    sender_password = st.secrets["email_password"]
+    if not sender_email or not sender_password:
+        st.error("Email credentials are not set in secrets.")
+        return False, "Email credentials are not set."
     try:
         yag = yagmail.SMTP(user=sender_email, password=sender_password)
         st.write("DEBUG: Yagmail SMTP object created.")
@@ -50,7 +54,8 @@ def save_to_gsheet(data, worksheet_name, columns):
     st.write(f"DEBUG: Saving to Google Sheet '{worksheet_name}' with columns:", columns)
     st.write("DEBUG: Data to save:", data)
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    creds_dict = json.loads(st.secrets["gspread_creds"])
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     client = gspread.authorize(creds)
     sheet = client.open("forms").worksheet(worksheet_name)
     row = [data.get(col, "") for col in columns]
@@ -580,8 +585,8 @@ def show_incident_form():
                                 incident_form_data,
                                 subject,
                                 body,
-                                to_email="nicholas.labrise@transdev.com",
-                                cc_emails="nlabrise@gmail.com"
+                                to_email=st.secrets["to_emails"],
+                                cc_emails=st.secrets["cc_emails"]
                             )
                             st.write("DEBUG: Email send result:", success, error)
                             if not success:
@@ -804,8 +809,8 @@ def show_pay_exception_form():
                             pay_form_data,
                             subject,
                             body,
-                            to_email="nicholas.labrise@transdev.com",
-                            cc_emails="nlabrise@gmail.com"
+                            to_email=st.secrets["to_emails"],
+                            cc_emails=st.secrets["cc_emails"],
                         )
                         st.write("DEBUG: Email send result:", success, error)
                         if not success:
