@@ -1,0 +1,9 @@
+streamlit
+streamlit-drawable-canvas
+pandas
+gspread
+oauth2client
+reportlab
+Pillow
+numpy
+yagmail
