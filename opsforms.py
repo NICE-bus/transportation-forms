@@ -69,30 +69,24 @@ def save_to_gsheet(data, worksheet_name, columns):
 #     white_bg = Image.new("RGBA", signature_img.size, "WHITE")
 #     white_bg.paste(signature_img, (0, 0), signature_img)
 #     return white_bg.convert("RGB")
-def process_signature_img(signature_img):
+def process_signature_img(signature_canvas):
     st.write("DEBUG: Processing signature image.")
 
-    if signature_img is None or signature_img.image_data is None:
-        st.write("DEBUG: No signature image found.")
+    if signature_canvas.image_data is None:
+        st.write("DEBUG: No signature image data.")
         return None
 
-    # Convert NumPy array to PIL image
-    try:
-        # st_canvas returns image_data as float32, so we convert to uint8
-        img_array = (signature_img.image_data * 255).astype(np.uint8)
-        signature_img = Image.fromarray(img_array)
+    # Convert canvas image (RGBA) to PIL Image
+    img_array = signature_canvas.image_data.astype(np.uint8)
+    signature_img = Image.fromarray(img_array, mode="RGBA")
 
-        # Ensure RGBA mode for compositing
-        signature_img = signature_img.convert("RGBA")
+    # Create a white RGB background
+    white_bg = Image.new("RGB", signature_img.size, (255, 255, 255))
 
-        white_bg = Image.new("RGBA", signature_img.size, "WHITE")
-        white_bg.paste(signature_img, (0, 0), signature_img)
+    # Paste the RGBA image onto the white background using alpha mask
+    white_bg.paste(signature_img, mask=signature_img.split()[3])  # 3 is the alpha channel
 
-        return white_bg.convert("RGB")
-
-    except Exception as e:
-        st.write("DEBUG: Failed to process signature image:", e)
-        return None
+    return white_bg
 
 
 def save_submission_pdf(data, field_list, pdf_title, filename, operator_signature_img=None, supervisor_signature_img=None):
@@ -461,7 +455,7 @@ def show_incident_form():
             operator_signature = st_canvas(
                 fill_color="rgba(255, 165, 0, 0.3)",
                 stroke_width=2,
-                stroke_color="#000000",
+                stroke_color"#000000",
                 background_color="#fff",
                 height=150,
                 width=600,
@@ -479,7 +473,7 @@ def show_incident_form():
             supervisor_signature = st_canvas(
                 fill_color="rgba(255, 165, 0, 0.3)",
                 stroke_width=2,
-                stroke_color="#000000",
+                stroke_color"#000000",
                 background_color="#fff",
                 height=150,
                 width=600,
@@ -599,9 +593,8 @@ def show_incident_form():
 
                         Operator: {incident_form_data['operator_name']}
                         Date: {incident_form_data['date']}
-                        Passenger: {incident_form_data['passenger_name']}
-                        Incident Type: {incident_form_data['incident_type']}
-
+                        Brief: {incident_form_data['brief']}
+                        
                         See attached PDF for details.
                         """
                         try:
@@ -708,7 +701,7 @@ def show_pay_exception_form():
         pay_operator_signature = st_canvas(
             fill_color="rgba(255, 165, 0, 0.3)",
             stroke_width=2,
-            stroke_color="#000000",
+            stroke_color"#000000",
             background_color="#fff",
             height=150,
             width=600,
@@ -722,7 +715,7 @@ def show_pay_exception_form():
         pay_supervisor_signature = st_canvas(
             fill_color="rgba(255, 165, 0, 0.3)",
             stroke_width=2,
-            stroke_color="#000000",
+            stroke_color"#000000",
             background_color="#fff",
             height=150,
             width=600,
