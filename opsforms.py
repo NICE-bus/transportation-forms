@@ -71,17 +71,17 @@ def process_signature_img(signature_canvas):
         st.write("DEBUG: No signature image data.")
         return None
 
-    # Convert canvas RGBA image to PIL image
+    # Convert the NumPy array to a PIL Image (RGBA)
     img_array = signature_canvas.image_data.astype(np.uint8)
-    signature_img = Image.fromarray(img_array, mode="RGBA")
+    rgba_image = Image.fromarray(img_array, mode="RGBA")
 
-    # Convert to grayscale (based on alpha) and invert to get black strokes
-    alpha = signature_img.split()[-1]  # Get alpha channel as grayscale mask
-    inverted = ImageOps.invert(alpha)  # Invert so signature is black on white
+    # Create a white background image (RGB)
+    white_bg = Image.new("RGB", rgba_image.size, (255, 255, 255))
 
-    # Convert to RGB and return
-    final_img = Image.merge("RGB", (inverted, inverted, inverted))
-    return final_img
+    # Paste the signature onto the white background using its alpha as a mask
+    white_bg.paste(rgba_image, mask=rgba_image.split()[3])  # Use alpha channel as mask
+
+    return white_bg
 
 def save_submission_pdf(data, field_list, pdf_title, filename, operator_signature_img=None, supervisor_signature_img=None):
     st.write("DEBUG: Generating PDF:", filename)
