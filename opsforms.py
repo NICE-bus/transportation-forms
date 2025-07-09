@@ -548,6 +548,15 @@ def show_incident_form():
                         st.error(f"Failed to save to Google Sheet: {e}")
                         st.write("DEBUG: Google Sheet error:", e)
 
+                    # Process signatures before generating PDF
+                    operator_signature_img = None
+                    if operator_signature.image_data is not None and is_signature_present(operator_signature.image_data):
+                        operator_signature_img = Image.fromarray(operator_signature.image_data.astype("uint8"), "RGBA")
+
+                    supervisor_signature_img = None
+                    if supervisor_signature.image_data is not None and is_signature_present(supervisor_signature.image_data):
+                        supervisor_signature_img = Image.fromarray(supervisor_signature.image_data.astype("uint8"), "RGBA")
+
                     # 2. Generate PDF
                     try:
                         # For incident report
@@ -557,12 +566,11 @@ def show_incident_form():
                             incident_field_list,
                             "Operator Incident Report",
                             filename,
-                            operator_signature_img=operator_signature,
-                            supervisor_signature_img=supervisor_signature
+                            operator_signature_img=operator_signature_img,
+                            supervisor_signature_img=supervisor_signature_img
                         )
                         st.write("DEBUG: PDF generated:", filename)
                     except Exception as e:
-                        st.error(f"Failed to generate PDF: {e}")
                         st.error(f"Failed to generate PDF: {e}")
                         filename = None
 
@@ -772,7 +780,16 @@ def show_pay_exception_form():
                 except Exception as e:
                     st.error(f"Failed to save to Google Sheet: {e}")
                     st.write("DEBUG: Google Sheet error:", e)
-                    
+
+                # Process signatures before generating PDF
+                pay_operator_signature_img = None
+                if pay_operator_signature.image_data is not None and is_signature_present(pay_operator_signature.image_data):
+                    pay_operator_signature_img = Image.fromarray(pay_operator_signature.image_data.astype("uint8"), "RGBA")
+
+                pay_supervisor_signature_img = None
+                if pay_supervisor_signature.image_data is not None and is_signature_present(pay_supervisor_signature.image_data):
+                    pay_supervisor_signature_img = Image.fromarray(pay_supervisor_signature.image_data.astype("uint8"), "RGBA")
+
                 try:
                     # For pay exception
                     filename = f"pay_exception_{pay_form_data['name']}_{pay_form_data['date']}.pdf"
@@ -781,15 +798,15 @@ def show_pay_exception_form():
                         pay_field_list,
                         "Operator Pay Exception Form",
                         filename,
-                        operator_signature_img=pay_operator_signature,
-                        supervisor_signature_img=pay_supervisor_signature
+                        operator_signature_img=pay_operator_signature_img,
+                        supervisor_signature_img=pay_supervisor_signature_img
                     )
                     st.write("DEBUG: PDF generated:", filename)
                 except Exception as e:
                     st.error(f"Failed to generate PDF: {e}")
                     st.write("DEBUG: PDF error:", e)
                     filename = None
-                    
+
                 if filename:
                     subject = f"Pay Exception Form: {pay_form_data['name']} on {pay_form_data['date']}"
                     body = f"""
