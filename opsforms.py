@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_drawable_canvas import st_canvas
 import pandas as pd
 import datetime
+from datetime import date, datetime
 import io
 from PIL import Image, ImageOps
 import gspread
@@ -37,6 +38,11 @@ def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None)
         st.write("DEBUG: Email send error:", e)
         return False, str(e)
 
+def serialize_value(val):
+    if isinstance(val, (date, datetime)):
+        return val.isoformat()
+    return val
+
 def draw_wrapped_text(c, text, x, y, max_width, font_name="Helvetica", font_size=12, leading=14):
     lines = simpleSplit(str(text), font_name, font_size, max_width)
     for line in lines:
@@ -53,7 +59,7 @@ def save_to_gsheet(data, worksheet_name, columns):
     st.write("DEBUG: Data to save:", data)
     client = gspread.service_account_from_dict(st.secrets["gspread_creds"])
     sheet = client.open("forms").worksheet(worksheet_name)
-    row = [data.get(col, "") for col in columns]
+    row = [serialize_value(data.get(col, "")) for col in columns]
     st.write("DEBUG: Row to append:", row)
     sheet.append_row(row)
     st.write("DEBUG: Row appended to Google Sheet.")
@@ -490,7 +496,7 @@ def show_incident_form():
                     st.error(f"Please fill in all required fields: {', '.join(missing)}")
                 else:
                     incident_form_data = {
-                        "date": date.isoformat(),
+                        "date": date,
                         "time": time,
                         "am_pm1": am_pm1,
                         "brief": brief,
@@ -508,8 +514,8 @@ def show_incident_form():
                         "reason_for_non_immediate_report": reason_for_non_immediate_report,
                         "sqm_respond_to_incident": sqm_respond_to_incident,
                         "responding_sqm": responding_sqm,
-                        "date_incident_occurred": date_incident_occurred.isoformat(),
-                        "date_incident_reported": date_incident_reported.isoformat(),
+                        "date_incident_occurred": date_incident_occurred,
+                        "date_incident_reported": date_incident_reported,
                         "time_incident_occurred": time_incident_occurred,
                         "am_pm2": am_pm2,
                         "time_incident_reported": time_incident_reported,
@@ -521,7 +527,7 @@ def show_incident_form():
                         "passenger_id": passenger_id,
                         "explanation_of_incident": explanation_of_incident,
                         "signed_sqm_name": signed_sqm_name,
-                        "date_submitted": date_submitted.isoformat(),
+                        "date_submitted": date_submitted,
                     }
                     st.write("DEBUG: incident_form_data:", incident_form_data)
 
@@ -726,7 +732,7 @@ def show_pay_exception_form():
         
             else:
                 pay_form_data = {
-                    "date": date.isoformat(),
+                    "date": date,
                     "name": name,
                     "run": run,
                     "bus_number": bus_number,
@@ -751,8 +757,8 @@ def show_pay_exception_form():
                     "time_reported_to_command": time_reported_to_command,
                     "am_pm5": am_pm5,
                     "pay_explanation": pay_explanation,
-                    "pay_operator_signature_date": pay_operator_signature_date.isoformat(),
-                    "pay_supervisor_signature_date": pay_supervisor_signature_date.isoformat(),
+                    "pay_operator_signature_date": pay_operator_signature_date,
+                    "pay_supervisor_signature_date": pay_supervisor_signature_date,
                 }
                 st.write("DEBUG: pay_form_data:", pay_form_data)
                 pay_columns = [
