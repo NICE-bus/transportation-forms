@@ -706,9 +706,7 @@ def show_pay_exception_form():
             key="pay_supervisor_signature",
         )
         
-        pay_supervisor_signature_date = st.date_input("Date", value=datetime.date.today(), key="pay_supervisor_signature_date")
-
-        
+        pay_supervisor_signature_date = st.date_input("Date", value=datetime.date.today(), key="pay_supervisor_signature_date")        
         
         submitted = st.form_submit_button("Submit Pay Exception Form")
         
