@@ -5,8 +5,6 @@ import datetime
 import io
 from PIL import Image, ImageOps
 import gspread
-import json
-from oauth2client.service_account import ServiceAccountCredentials
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas as pdf_canvas
 from reportlab.lib.utils import ImageReader, simpleSplit
@@ -53,10 +51,7 @@ def is_signature_present(image_data):
 def save_to_gsheet(data, worksheet_name, columns):
     st.write(f"DEBUG: Saving to Google Sheet '{worksheet_name}' with columns:", columns)
     st.write("DEBUG: Data to save:", data)
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds_dict = json.loads(st.secrets["gspread_creds"])
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-    client = gspread.authorize(creds)
+    client = gspread.service_account_from_dict(st.secrets["gcp_service_account"])
     sheet = client.open("forms").worksheet(worksheet_name)
     row = [data.get(col, "") for col in columns]
     st.write("DEBUG: Row to append:", row)
