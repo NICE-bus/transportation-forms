@@ -64,27 +64,33 @@ def save_to_gsheet(data, worksheet_name, columns):
     st.write("DEBUG: Row appended to Google Sheet.")
     
 
-def process_signature_img(signature_canvas):
-    st.write("DEBUG: Processing signature image.")
+# def process_signature_img(signature_canvas):
+#     st.write("DEBUG: Processing signature image.")
 
-    if signature_canvas.image_data is None:
-        st.write("DEBUG: No signature image data.")
-        return None
+#     if signature_canvas.image_data is None:
+#         st.write("DEBUG: No signature image data.")
+#         return None
 
-    # Convert NumPy array to RGBA PIL Image
-    img_array = signature_canvas.image_data.astype(np.uint8)
-    signature_img = Image.fromarray(img_array, mode="RGBA")
+#     # Convert NumPy array to RGBA PIL Image
+#     img_array = signature_canvas.image_data.astype(np.uint8)
+#     signature_img = Image.fromarray(img_array, mode="RGBA")
 
-    # Create a white RGBA background
+#     # Create a white RGBA background
+#     white_bg = Image.new("RGBA", signature_img.size, "WHITE")
+
+#     # Paste signature over white background using itself as mask
+#     white_bg.paste(signature_img, (0, 0), signature_img)
+
+#     # Convert to RGB (removes transparency)
+#     final_img = white_bg.convert("RGB")
+
+#     return final_img
+
+def process_signature_img(signature_img):
+    signature_img = signature_img.convert("RGBA")
     white_bg = Image.new("RGBA", signature_img.size, "WHITE")
-
-    # Paste signature over white background using itself as mask
     white_bg.paste(signature_img, (0, 0), signature_img)
-
-    # Convert to RGB (removes transparency)
-    final_img = white_bg.convert("RGB")
-
-    return final_img
+    return white_bg.convert("RGB")
 
 def save_submission_pdf(data, field_list, pdf_title, filename, operator_signature_img=None, supervisor_signature_img=None):
     st.write("DEBUG: Generating PDF:", filename)
