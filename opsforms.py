@@ -63,12 +63,7 @@ def save_to_gsheet(data, worksheet_name, columns):
     sheet.append_row(row)
     st.write("DEBUG: Row appended to Google Sheet.")
     
-# def process_signature_img(signature_img):
-#     st.write("DEBUG: Processing signature image.")
-#     signature_img = signature_img.convert("RGBA")
-#     white_bg = Image.new("RGBA", signature_img.size, "WHITE")
-#     white_bg.paste(signature_img, (0, 0), signature_img)
-#     return white_bg.convert("RGB")
+
 def process_signature_img(signature_canvas):
     st.write("DEBUG: Processing signature image.")
 
@@ -76,18 +71,17 @@ def process_signature_img(signature_canvas):
         st.write("DEBUG: No signature image data.")
         return None
 
-    # Convert canvas image (RGBA) to PIL Image
+    # Convert canvas RGBA image to PIL image
     img_array = signature_canvas.image_data.astype(np.uint8)
     signature_img = Image.fromarray(img_array, mode="RGBA")
 
-    # Create a white RGB background
-    white_bg = Image.new("RGB", signature_img.size, (255, 255, 255))
+    # Convert to grayscale (based on alpha) and invert to get black strokes
+    alpha = signature_img.split()[-1]  # Get alpha channel as grayscale mask
+    inverted = ImageOps.invert(alpha)  # Invert so signature is black on white
 
-    # Paste the RGBA image onto the white background using alpha mask
-    white_bg.paste(signature_img, mask=signature_img.split()[3])  # 3 is the alpha channel
-
-    return white_bg
-
+    # Convert to RGB and return
+    final_img = Image.merge("RGB", (inverted, inverted, inverted))
+    return final_img
 
 def save_submission_pdf(data, field_list, pdf_title, filename, operator_signature_img=None, supervisor_signature_img=None):
     st.write("DEBUG: Generating PDF:", filename)
