@@ -734,118 +734,118 @@ def show_pay_exception_form():
         
         submitted = st.form_submit_button("Submit Pay Exception Form")
         
-        if submitted:
-            st.write("DEBUG: Pay Exception form submitted.")
-            pay_required_fields = {
-                "Date": date,
-                "Name": name,
-                "Run #": run,
-                "Bus #": bus_number,
-                "ID #": id_number,
-                "Route #": route,
-                "Operator Signature Date": pay_operator_signature_date,
-                "Supervisor Signature Date": pay_supervisor_signature_date,
-            }
-            
-            missing = [label for label, value in pay_required_fields.items() if value in ("", None, "")]
-            st.write("DEBUG: Missing required fields:", missing)
-            if missing:
-                st.error(f"Please fill in all required fields: {', '.join(missing)}")
+    if submitted:
+        st.write("DEBUG: Pay Exception form submitted.")
+        pay_required_fields = {
+            "Date": date,
+            "Name": name,
+            "Run #": run,
+            "Bus #": bus_number,
+            "ID #": id_number,
+            "Route #": route,
+            "Operator Signature Date": pay_operator_signature_date,
+            "Supervisor Signature Date": pay_supervisor_signature_date,
+        }
         
-            else:
-                pay_form_data = {
-                    "date": date,
-                    "name": name,
-                    "run": run,
-                    "bus_number": bus_number,
-                    "id_number": id_number,
-                    "route": route,
-                    "clock_in": clock_in,
-                    "am_pm1": am_pm1,
-                    "clock_in_before": clock_in_before,
-                    "am_pm2": am_pm2,
-                    "clock_out": clock_out,
-                    "am_pm3": am_pm3,
-                    "actual_clock_out": actual_clock_out,
-                    "am_pm4": am_pm4,
-                    "weather": weather,
-                    "extra_work": extra_work,
-                    "traffic_delay": traffic_delay,
-                    "incident_report": incident_report,
-                    "bus_exchange": bus_exchange,
-                    "missed_meal": missed_meal,
-                    "road_call": road_call,
-                    "traffic_location": traffic_location,
-                    "time_reported_to_command": time_reported_to_command,
-                    "am_pm5": am_pm5,
-                    "pay_explanation": pay_explanation,
-                    "pay_operator_signature_date": pay_operator_signature_date,
-                    "pay_supervisor_signature_date": pay_supervisor_signature_date,
-                }
-                st.write("DEBUG: pay_form_data:", pay_form_data)
-                pay_columns = [
-                    "date", "name", "run", "bus_number", "id_number", "route", "clock_in", "am_pm1",
-                    "clock_in_before","am_pm2", "clock_out", "am_pm3", "actual_clock_out",  "am_pm4", 
-                    "weather", "extra_work", "traffic_delay", "incident_report", "bus_exchange", "missed_meal", 
-                    "road_call", "traffic_location", "time_reported_to_command", "am_pm5", "pay_explanation",
-                    "pay_operator_signature_date", "pay_supervisor_signature_date",
-                ]
-                st.write("DEBUG: pay_columns:", pay_columns)
+        missing = [label for label, value in pay_required_fields.items() if value in ("", None, "")]
+        st.write("DEBUG: Missing required fields:", missing)
+        if missing:
+            st.error(f"Please fill in all required fields: {', '.join(missing)}")
+    
+        else:
+            pay_form_data = {
+                "date": date,
+                "name": name,
+                "run": run,
+                "bus_number": bus_number,
+                "id_number": id_number,
+                "route": route,
+                "clock_in": clock_in,
+                "am_pm1": am_pm1,
+                "clock_in_before": clock_in_before,
+                "am_pm2": am_pm2,
+                "clock_out": clock_out,
+                "am_pm3": am_pm3,
+                "actual_clock_out": actual_clock_out,
+                "am_pm4": am_pm4,
+                "weather": weather,
+                "extra_work": extra_work,
+                "traffic_delay": traffic_delay,
+                "incident_report": incident_report,
+                "bus_exchange": bus_exchange,
+                "missed_meal": missed_meal,
+                "road_call": road_call,
+                "traffic_location": traffic_location,
+                "time_reported_to_command": time_reported_to_command,
+                "am_pm5": am_pm5,
+                "pay_explanation": pay_explanation,
+                "pay_operator_signature_date": pay_operator_signature_date,
+                "pay_supervisor_signature_date": pay_supervisor_signature_date,
+            }
+            st.write("DEBUG: pay_form_data:", pay_form_data)
+            pay_columns = [
+                "date", "name", "run", "bus_number", "id_number", "route", "clock_in", "am_pm1",
+                "clock_in_before","am_pm2", "clock_out", "am_pm3", "actual_clock_out",  "am_pm4", 
+                "weather", "extra_work", "traffic_delay", "incident_report", "bus_exchange", "missed_meal", 
+                "road_call", "traffic_location", "time_reported_to_command", "am_pm5", "pay_explanation",
+                "pay_operator_signature_date", "pay_supervisor_signature_date",
+            ]
+            st.write("DEBUG: pay_columns:", pay_columns)
+            try:
+                save_to_gsheet(pay_form_data, worksheet_name="Pay Exception Forms", columns=pay_columns)
+                st.write("DEBUG: Saved pay exception to Google Sheet.")
+            except Exception as e:
+                st.error(f"Failed to save to Google Sheet: {e}")
+                st.write("DEBUG: Google Sheet error:", e)
+                
+            try:
+                # For pay exception
+                filename = f"pay_exception_{pay_form_data['name']}_{pay_form_data['date']}.pdf"
+                save_submission_pdf(
+                    pay_form_data,
+                    pay_field_list,
+                    "Operator Pay Exception Form",
+                    filename,
+                    operator_signature_img=pay_operator_signature,
+                    supervisor_signature_img=pay_supervisor_signature
+                )
+                st.write("DEBUG: PDF generated:", filename)
+            except Exception as e:
+                st.error(f"Failed to generate PDF: {e}")
+                st.write("DEBUG: PDF error:", e)
+                filename = None
+                
+            if filename:
+                subject = f"Pay Exception Form: {pay_form_data['name']} on {pay_form_data['date']}"
+                body = f"""
+                A pay exception form has been submitted.
+
+                Operator: {pay_form_data['name']}
+                Date: {pay_form_data['date']}
+                Run #: {pay_form_data['run']}
+
+                See attached PDF for details.
+                """
                 try:
-                    save_to_gsheet(pay_form_data, worksheet_name="Pay Exception Forms", columns=pay_columns)
-                    st.write("DEBUG: Saved pay exception to Google Sheet.")
-                except Exception as e:
-                    st.error(f"Failed to save to Google Sheet: {e}")
-                    st.write("DEBUG: Google Sheet error:", e)
-                    
-                try:
-                    # For pay exception
-                    filename = f"pay_exception_{pay_form_data['name']}_{pay_form_data['date']}.pdf"
-                    save_submission_pdf(
-                        pay_form_data,
-                        pay_field_list,
-                        "Operator Pay Exception Form",
+                    success, error = send_pdf_email(
                         filename,
-                        operator_signature_img=pay_operator_signature,
-                        supervisor_signature_img=pay_supervisor_signature
+                        pay_form_data,
+                        subject,
+                        body,
+                        to_email=st.secrets["to_emails"],
+                        cc_emails=st.secrets["cc_emails"],
                     )
-                    st.write("DEBUG: PDF generated:", filename)
+                    st.write("DEBUG: Email send result:", success, error)
+                    if not success:
+                        st.error(f"Failed to send email: {error}")
                 except Exception as e:
-                    st.error(f"Failed to generate PDF: {e}")
-                    st.write("DEBUG: PDF error:", e)
-                    filename = None
-                    
-                if filename:
-                    subject = f"Pay Exception Form: {pay_form_data['name']} on {pay_form_data['date']}"
-                    body = f"""
-                    A pay exception form has been submitted.
-
-                    Operator: {pay_form_data['name']}
-                    Date: {pay_form_data['date']}
-                    Run #: {pay_form_data['run']}
-
-                    See attached PDF for details.
-                    """
-                    try:
-                        success, error = send_pdf_email(
-                            filename,
-                            pay_form_data,
-                            subject,
-                            body,
-                            to_email=st.secrets["to_emails"],
-                            cc_emails=st.secrets["cc_emails"],
-                        )
-                        st.write("DEBUG: Email send result:", success, error)
-                        if not success:
-                            st.error(f"Failed to send email: {error}")
-                    except Exception as e:
-                        st.error(f"Failed to send email: {e}")
-                        st.write("DEBUG: Email error:", e)
-                st.success("Pay Exception Form submitted!")
-                st.write("DEBUG: Pay Exception Form submitted, waiting for user action.")
-                if st.button("Return Home", key="pay_exception_return_after_submit"):
-                    st.session_state["page"] = "home"
-                    st.rerun()
+                    st.error(f"Failed to send email: {e}")
+                    st.write("DEBUG: Email error:", e)
+            st.success("Pay Exception Form submitted!")
+            st.write("DEBUG: Pay Exception Form submitted, waiting for user action.")
+            if st.button("Return Home", key="pay_exception_return_after_submit"):
+                st.session_state["page"] = "home"
+                st.rerun()
         
     if st.button("Clear", key="pay_exception_clear_bottom"):
         st.write("DEBUG: Pay Exception form Clear button pressed.")
