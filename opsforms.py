@@ -51,7 +51,7 @@ def is_signature_present(image_data):
 def save_to_gsheet(data, worksheet_name, columns):
     st.write(f"DEBUG: Saving to Google Sheet '{worksheet_name}' with columns:", columns)
     st.write("DEBUG: Data to save:", data)
-    client = gspread.service_account_from_dict(st.secrets["gcp_service_account"])
+    client = gspread.service_account_from_dict(st.secrets["gspread_creds"])
     sheet = client.open("forms").worksheet(worksheet_name)
     row = [data.get(col, "") for col in columns]
     st.write("DEBUG: Row to append:", row)
