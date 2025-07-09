@@ -38,7 +38,7 @@ def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None)
         return False, str(e)
 
 def serialize_value(val):
-    if isinstance(val, (date, datetime)):
+    if isinstance(val, (datetime.date, datetime.datetime)):
         return val.isoformat()
     return val
 
