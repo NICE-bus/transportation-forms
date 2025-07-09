@@ -490,7 +490,7 @@ def show_incident_form():
                     st.error(f"Please fill in all required fields: {', '.join(missing)}")
                 else:
                     incident_form_data = {
-                        "date": date,
+                        "date": date.isoformat(),
                         "time": time,
                         "am_pm1": am_pm1,
                         "brief": brief,
@@ -508,8 +508,8 @@ def show_incident_form():
                         "reason_for_non_immediate_report": reason_for_non_immediate_report,
                         "sqm_respond_to_incident": sqm_respond_to_incident,
                         "responding_sqm": responding_sqm,
-                        "date_incident_occurred": date_incident_occurred,
-                        "date_incident_reported": date_incident_reported,
+                        "date_incident_occurred": date_incident_occurred.isoformat(),
+                        "date_incident_reported": date_incident_reported.isoformat(),
                         "time_incident_occurred": time_incident_occurred,
                         "am_pm2": am_pm2,
                         "time_incident_reported": time_incident_reported,
@@ -521,7 +521,7 @@ def show_incident_form():
                         "passenger_id": passenger_id,
                         "explanation_of_incident": explanation_of_incident,
                         "signed_sqm_name": signed_sqm_name,
-                        "date_submitted": date_submitted,
+                        "date_submitted": date_submitted.isoformat(),
                     }
                     st.write("DEBUG: incident_form_data:", incident_form_data)
 
@@ -726,7 +726,7 @@ def show_pay_exception_form():
         
             else:
                 pay_form_data = {
-                    "date": date,
+                    "date": date.isoformat(),
                     "name": name,
                     "run": run,
                     "bus_number": bus_number,
@@ -751,8 +751,8 @@ def show_pay_exception_form():
                     "time_reported_to_command": time_reported_to_command,
                     "am_pm5": am_pm5,
                     "pay_explanation": pay_explanation,
-                    "pay_operator_signature_date": pay_operator_signature_date,
-                    "pay_supervisor_signature_date": pay_supervisor_signature_date,
+                    "pay_operator_signature_date": pay_operator_signature_date.isoformat(),
+                    "pay_supervisor_signature_date": pay_supervisor_signature_date.isoformat(),
                 }
                 st.write("DEBUG: pay_form_data:", pay_form_data)
                 pay_columns = [
