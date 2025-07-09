@@ -701,7 +701,7 @@ def show_pay_exception_form():
         pay_operator_signature = st_canvas(
             fill_color="rgba(255, 165, 0, 0.3)",
             stroke_width=2,
-            stroke_color"#000000",
+            stroke_color="#000000",
             background_color="#fff",
             height=150,
             width=600,
@@ -715,7 +715,7 @@ def show_pay_exception_form():
         pay_supervisor_signature = st_canvas(
             fill_color="rgba(255, 165, 0, 0.3)",
             stroke_width=2,
-            stroke_color"#000000",
+            stroke_color="#000000",
             background_color="#fff",
             height=150,
             width=600,
