@@ -71,17 +71,20 @@ def process_signature_img(signature_canvas):
         st.write("DEBUG: No signature image data.")
         return None
 
-    # Convert the NumPy array to a PIL Image (RGBA)
+    # Convert NumPy array to RGBA PIL Image
     img_array = signature_canvas.image_data.astype(np.uint8)
-    rgba_image = Image.fromarray(img_array, mode="RGBA")
+    signature_img = Image.fromarray(img_array, mode="RGBA")
 
-    # Create a white background image (RGB)
-    white_bg = Image.new("RGB", rgba_image.size, (255, 255, 255))
+    # Create a white RGBA background
+    white_bg = Image.new("RGBA", signature_img.size, "WHITE")
 
-    # Paste the signature onto the white background using its alpha as a mask
-    white_bg.paste(rgba_image, mask=rgba_image.split()[3])  # Use alpha channel as mask
+    # Paste signature over white background using itself as mask
+    white_bg.paste(signature_img, (0, 0), signature_img)
 
-    return white_bg
+    # Convert to RGB (removes transparency)
+    final_img = white_bg.convert("RGB")
+
+    return final_img
 
 def save_submission_pdf(data, field_list, pdf_title, filename, operator_signature_img=None, supervisor_signature_img=None):
     st.write("DEBUG: Generating PDF:", filename)
@@ -450,7 +453,7 @@ def show_incident_form():
                 fill_color="rgba(255, 165, 0, 0.3)",
                 stroke_width=2,
                 stroke_color="#000000",
-                background_color="#fff",
+                background_color="#ffffff",
                 height=150,
                 width=600,
                 drawing_mode="freedraw",
@@ -468,7 +471,7 @@ def show_incident_form():
                 fill_color="rgba(255, 165, 0, 0.3)",
                 stroke_width=2,
                 stroke_color="#000000",
-                background_color="#fff",
+                background_color="#ffffff",
                 height=150,
                 width=600,
                 drawing_mode="freedraw",
@@ -696,7 +699,7 @@ def show_pay_exception_form():
             fill_color="rgba(255, 165, 0, 0.3)",
             stroke_width=2,
             stroke_color="#000000",
-            background_color="#fff",
+            background_color="#ffffff",
             height=150,
             width=600,
             drawing_mode="freedraw",
@@ -710,7 +713,7 @@ def show_pay_exception_form():
             fill_color="rgba(255, 165, 0, 0.3)",
             stroke_width=2,
             stroke_color="#000000",
-            background_color="#fff",
+            background_color="#ffffff",
             height=150,
             width=600,
             drawing_mode="freedraw",
