@@ -116,12 +116,12 @@ def save_submission_pdf(data, field_list, pdf_title, filename, operator_signatur
     
     for label, key in field_list:
         value = data.get(key, "")
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(72, y, f"{label}:")
-        c.setFont("Helvetica", 12)
-        c.drawString(250, y, str(value))
-        y -= 20
-        if key in wrapped_text_fields and value:
+        # c.setFont("Helvetica-Bold", 12)
+        # c.drawString(72, y, f"{label}:")
+        # c.setFont("Helvetica", 12)
+        # c.drawString(250, y, str(value))
+        # y -= 20
+        if key in wrapped_text_fields:
             c.setFont("Helvetica-Bold", 12)
             c.drawString(72, y, f"{label}:")
             y -= 16
