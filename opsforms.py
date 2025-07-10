@@ -112,7 +112,6 @@ def save_submission_pdf(data, field_list, pdf_title, filename, operator_signatur
         "pay_explanation",
         "traffic_location"
     ]
-
     
     for label, key in field_list:
         value = data.get(key, "")
@@ -677,207 +676,223 @@ def show_pay_exception_form():
     if st.button("Return Home", key="pay_exception_return_top"):
         st.write("DEBUG: Pay Exception Return Home button pressed.")
         st.session_state["page"] = "home"
+        st.session_state["pay_exception_submitted"] = False
         st.rerun()
+    if not st.session_state.get("pay_exception_submitted", False):
+        st.write("DEBUG: Pay Exception form is visible.")
         
-    with st.form(key=f"pay_exception_form_{st.session_state['form_key']}"):
-        col1, col2 = st.columns(2)
-        with col1:
-            date = st.date_input("Date", value=datetime.date.today(), key="pay_date")
-            name = st.text_input("Name", key="pay_name")
-            run = st.text_input("Run #", key="pay_run")
-        with col2:
-            bus_number = st.text_input("Bus #", key="pay_bus_number")
-            id_number = st.text_input("ID #", key="pay_id_number")
-            route = st.text_input("Route #", key="pay_route")
+        with st.form(key=f"pay_exception_form_{st.session_state['form_key']}"):
+            col1, col2 = st.columns(2)
+            with col1:
+                date = st.date_input("Date", value=datetime.date.today(), key="pay_date")
+                name = st.text_input("Name", key="pay_name")
+                run = st.text_input("Run #", key="pay_run")
+            with col2:
+                bus_number = st.text_input("Bus #", key="pay_bus_number")
+                id_number = st.text_input("ID #", key="pay_id_number")
+                route = st.text_input("Route #", key="pay_route")
 
-        col3, col4, col5, col6 = st.columns(4)
-        with col3:
-            clock_in = st.text_input("Clock In", key="pay_clock_in")
-            clock_in_before = st.text_input("Scheduled Clock In (Only fill out if Operator is asked to report before)", key="pay_scheduled_clock_in")
-        with col4:
-            am_pm1 = st.radio("AM/PM", options=["AM", "PM"], horizontal=True, key="pay_am_pm1")
-            am_pm2 = st.radio("AM/PM", options=["AM", "PM"], horizontal=True, key="pay_am_pm2")
-        with col5:
-            clock_out = st.text_input("Clock Out", key="pay_clock_out")
-            actual_clock_out = st.text_input("Actual Clock Out", key="pay_actual_clock_out")          
-        with col6:
-            am_pm3 = st.radio("AM/PM", options=["AM", "PM"], horizontal=True, key="pay_am_pm3")
-            am_pm4 = st.radio("AM/PM", options=["AM", "PM"], horizontal=True, key="pay_am_pm4")
-        
-        st.write('Reason for the Exception;') 
-        st.write('Please Note…If you are pulling in late, you need a reason. If your noting "traffic" we need a description of what route, what street and time of the traffic you encountered. Please be advised all late pull ins MUST be texted to Command Center using the Clever system.')
-        st.write("*Note that all late pull-in's will be validated in the CAD system.")
-        
-        col7, col8, col9 = st.columns(3)
-        with col7:
-            weather = st.checkbox("Weather", key="pay_weather")
-            extra_work = st.checkbox("Extra Work", key="pay_extra_work")
-            traffic_delay = st.checkbox("Traffic Delay", key="pay_traffic_delay")
-        with col8:
-            incident_report = st.checkbox("Acc./Incident Report", key="pay_incident_report")
-            bus_exchange = st.checkbox("Bus Exchange", key="pay_bus_exchange")
-        with col9:
-            missed_meal = st.checkbox("Missed Meal", key="pay_missed_meal")
-            road_call = st.checkbox("Road Call", key="pay_road_call")
-        traffic_location = st.text_input("Location of Traffic", key="pay_traffic_location")
-        col10, col11 = st.columns(2)
-        with col10:
-            time_reported_to_command = st.text_input("Time Reported to Center", key="pay_time_reported_to_command")
-        with col11:
-            am_pm5 = st.radio("AM/PM", options=["AM", "PM"], horizontal=True, key="pay_am_pm5")
+            col3, col4, col5, col6 = st.columns(4)
+            with col3:
+                clock_in = st.text_input("Clock In", key="pay_clock_in")
+                clock_in_before = st.text_input("Scheduled Clock In (Only fill out if Operator is asked to report before)", key="pay_scheduled_clock_in")
+            with col4:
+                am_pm1 = st.radio("AM/PM", options=["AM", "PM"], horizontal=True, key="pay_am_pm1")
+                am_pm2 = st.radio("AM/PM", options=["AM", "PM"], horizontal=True, key="pay_am_pm2")
+            with col5:
+                clock_out = st.text_input("Clock Out", key="pay_clock_out")
+                actual_clock_out = st.text_input("Actual Clock Out", key="pay_actual_clock_out")          
+            with col6:
+                am_pm3 = st.radio("AM/PM", options=["AM", "PM"], horizontal=True, key="pay_am_pm3")
+                am_pm4 = st.radio("AM/PM", options=["AM", "PM"], horizontal=True, key="pay_am_pm4")
             
-        pay_explanation = st.text_area("Explanation(Must be filled in.)", key="pay_explanation", height=150)
-        
-        st.write("Operator Signature below:")
-        pay_operator_signature = st_canvas(
-            fill_color="rgba(255, 165, 0, 0.3)",
-            stroke_width=2,
-            stroke_color="#000000",
-            background_color="#ffffff",
-            height=150,
-            width=600,
-            drawing_mode="freedraw",
-            key="pay_operator_signature",
-        )
-
-        pay_operator_signature_date = st.date_input("Date", value=datetime.date.today(), key="pay_operator_signature_date")
-
-        st.write("Supervisor Signature below:")
-        pay_supervisor_signature = st_canvas(
-            fill_color="rgba(255, 165, 0, 0.3)",
-            stroke_width=2,
-            stroke_color="#000000",
-            background_color="#ffffff",
-            height=150,
-            width=600,
-            drawing_mode="freedraw",
-            key="pay_supervisor_signature",
-        )
-        
-        pay_supervisor_signature_date = st.date_input("Date", value=datetime.date.today(), key="pay_supervisor_signature_date")        
-        
-        submitted = st.form_submit_button("Submit Pay Exception Form")
-        
-    if submitted:
-        st.write("DEBUG: Pay Exception form submitted.")
-        pay_required_fields = {
-            "Date": date,
-            "Name": name,
-            "Run #": run,
-            "Bus #": bus_number,
-            "ID #": id_number,
-            "Route #": route,
-            "Operator Signature Date": pay_operator_signature_date,
-            "Supervisor Signature Date": pay_supervisor_signature_date,
-        }
-        
-        missing = [label for label, value in pay_required_fields.items() if value in ("", None, "")]
-        st.write("DEBUG: Missing required fields:", missing)
-        if missing:
-            st.error(f"Please fill in all required fields: {', '.join(missing)}")
-    
-        else:
-            pay_form_data = {
-                "date": date,
-                "name": name,
-                "run": run,
-                "bus_number": bus_number,
-                "id_number": id_number,
-                "route": route,
-                "clock_in": clock_in,
-                "am_pm1": am_pm1,
-                "clock_in_before": clock_in_before,
-                "am_pm2": am_pm2,
-                "clock_out": clock_out,
-                "am_pm3": am_pm3,
-                "actual_clock_out": actual_clock_out,
-                "am_pm4": am_pm4,
-                "weather": weather,
-                "extra_work": extra_work,
-                "traffic_delay": traffic_delay,
-                "incident_report": incident_report,
-                "bus_exchange": bus_exchange,
-                "missed_meal": missed_meal,
-                "road_call": road_call,
-                "traffic_location": traffic_location,
-                "time_reported_to_command": time_reported_to_command,
-                "am_pm5": am_pm5,
-                "pay_explanation": pay_explanation,
-                "pay_operator_signature_date": pay_operator_signature_date,
-                "pay_supervisor_signature_date": pay_supervisor_signature_date,
-            }
-            st.write("DEBUG: pay_form_data:", pay_form_data)
-            pay_columns = [
-                "date", "name", "run", "bus_number", "id_number", "route", "clock_in", "am_pm1",
-                "clock_in_before","am_pm2", "clock_out", "am_pm3", "actual_clock_out",  "am_pm4", 
-                "weather", "extra_work", "traffic_delay", "incident_report", "bus_exchange", "missed_meal", 
-                "road_call", "traffic_location", "time_reported_to_command", "am_pm5", "pay_explanation",
-                "pay_operator_signature_date", "pay_supervisor_signature_date",
-            ]
-            st.write("DEBUG: pay_columns:", pay_columns)
-            try:
-                save_to_gsheet(pay_form_data, worksheet_name="Pay Exception Forms", columns=pay_columns)
-                st.write("DEBUG: Saved pay exception to Google Sheet.")
-            except Exception as e:
-                st.error(f"Failed to save to Google Sheet: {e}")
-                st.write("DEBUG: Google Sheet error:", e)
+            st.write('Reason for the Exception;') 
+            st.write('Please Note…If you are pulling in late, you need a reason. If your noting "traffic" we need a description of what route, what street and time of the traffic you encountered. Please be advised all late pull ins MUST be texted to Command Center using the Clever system.')
+            st.write("*Note that all late pull-in's will be validated in the CAD system.")
+            
+            col7, col8, col9 = st.columns(3)
+            with col7:
+                weather = st.checkbox("Weather", key="pay_weather")
+                extra_work = st.checkbox("Extra Work", key="pay_extra_work")
+                traffic_delay = st.checkbox("Traffic Delay", key="pay_traffic_delay")
+            with col8:
+                incident_report = st.checkbox("Acc./Incident Report", key="pay_incident_report")
+                bus_exchange = st.checkbox("Bus Exchange", key="pay_bus_exchange")
+            with col9:
+                missed_meal = st.checkbox("Missed Meal", key="pay_missed_meal")
+                road_call = st.checkbox("Road Call", key="pay_road_call")
+            traffic_location = st.text_input("Location of Traffic", key="pay_traffic_location")
+            col10, col11 = st.columns(2)
+            with col10:
+                time_reported_to_command = st.text_input("Time Reported to Center", key="pay_time_reported_to_command")
+            with col11:
+                am_pm5 = st.radio("AM/PM", options=["AM", "PM"], horizontal=True, key="pay_am_pm5")
                 
-            try:
-                # For pay exception
-                filename = f"pay_exception_{pay_form_data['name']}_{pay_form_data['date']}.pdf"
-                save_submission_pdf(
-                    pay_form_data,
-                    pay_field_list,
-                    "Operator Pay Exception Form",
-                    filename,
-                    operator_signature_img=pay_operator_signature,
-                    supervisor_signature_img=pay_supervisor_signature
-                )
-                st.write("DEBUG: PDF generated:", filename)
-            except Exception as e:
-                st.error(f"Failed to generate PDF: {e}")
-                st.write("DEBUG: PDF error:", e)
-                filename = None
+            pay_explanation = st.text_area("Explanation(Must be filled in.)", key="pay_explanation", height=150)
+            
+            st.write("Operator Signature below:")
+            pay_operator_signature = st_canvas(
+                fill_color="rgba(255, 165, 0, 0.3)",
+                stroke_width=2,
+                stroke_color="#000000",
+                background_color="#ffffff",
+                height=150,
+                width=600,
+                drawing_mode="freedraw",
+                key="pay_operator_signature",
+            )
+
+            pay_operator_signature_date = st.date_input("Date", value=datetime.date.today(), key="pay_operator_signature_date")
+
+            st.write("Supervisor Signature below:")
+            pay_supervisor_signature = st_canvas(
+                fill_color="rgba(255, 165, 0, 0.3)",
+                stroke_width=2,
+                stroke_color="#000000",
+                background_color="#ffffff",
+                height=150,
+                width=600,
+                drawing_mode="freedraw",
+                key="pay_supervisor_signature",
+            )
+            
+            pay_supervisor_signature_date = st.date_input("Date", value=datetime.date.today(), key="pay_supervisor_signature_date")        
+            
+            submitted = st.form_submit_button("Submit Pay Exception Form")
+            
+            if submitted:
+                st.write("DEBUG: Pay Exception form submitted.")
+                pay_required_fields = {
+                    "Date": date,
+                    "Name": name,
+                    "Run #": run,
+                    "Bus #": bus_number,
+                    "ID #": id_number,
+                    "Route #": route,
+                    "Operator Signature Date": pay_operator_signature_date,
+                    "Supervisor Signature Date": pay_supervisor_signature_date,
+                }
                 
-            if filename:
-                subject = f"Pay Exception Form: {pay_form_data['name']} on {pay_form_data['date']}"
-                body = f"""
-                A pay exception form has been submitted.
+                missing = [label for label, value in pay_required_fields.items() if value in ("", None, "")]
+                st.write("DEBUG: Missing required fields:", missing)
+                if missing:
+                    st.error(f"Please fill in all required fields: {', '.join(missing)}")
+            
+                else:
+                    pay_form_data = {
+                        "date": date,
+                        "name": name,
+                        "run": run,
+                        "bus_number": bus_number,
+                        "id_number": id_number,
+                        "route": route,
+                        "clock_in": clock_in,
+                        "am_pm1": am_pm1,
+                        "clock_in_before": clock_in_before,
+                        "am_pm2": am_pm2,
+                        "clock_out": clock_out,
+                        "am_pm3": am_pm3,
+                        "actual_clock_out": actual_clock_out,
+                        "am_pm4": am_pm4,
+                        "weather": weather,
+                        "extra_work": extra_work,
+                        "traffic_delay": traffic_delay,
+                        "incident_report": incident_report,
+                        "bus_exchange": bus_exchange,
+                        "missed_meal": missed_meal,
+                        "road_call": road_call,
+                        "traffic_location": traffic_location,
+                        "time_reported_to_command": time_reported_to_command,
+                        "am_pm5": am_pm5,
+                        "pay_explanation": pay_explanation,
+                        "pay_operator_signature_date": pay_operator_signature_date,
+                        "pay_supervisor_signature_date": pay_supervisor_signature_date,
+                    }
+                    st.write("DEBUG: pay_form_data:", pay_form_data)
+                    pay_columns = [
+                        "date", "name", "run", "bus_number", "id_number", "route", "clock_in", "am_pm1",
+                        "clock_in_before","am_pm2", "clock_out", "am_pm3", "actual_clock_out",  "am_pm4", 
+                        "weather", "extra_work", "traffic_delay", "incident_report", "bus_exchange", "missed_meal", 
+                        "road_call", "traffic_location", "time_reported_to_command", "am_pm5", "pay_explanation",
+                        "pay_operator_signature_date", "pay_supervisor_signature_date",
+                    ]
+                    st.write("DEBUG: pay_columns:", pay_columns)
+                    try:
+                        save_to_gsheet(pay_form_data, worksheet_name="Pay Exception Forms", columns=pay_columns)
+                        st.write("DEBUG: Saved pay exception to Google Sheet.")
+                    except Exception as e:
+                        st.error(f"Failed to save to Google Sheet: {e}")
+                        st.write("DEBUG: Google Sheet error:", e)
+                        
+                    try:
+                        # For pay exception
+                        filename = f"pay_exception_{pay_form_data['name']}_{pay_form_data['date']}.pdf"
+                        save_submission_pdf(
+                            pay_form_data,
+                            pay_field_list,
+                            "Operator Pay Exception Form",
+                            filename,
+                            operator_signature_img=pay_operator_signature,
+                            supervisor_signature_img=pay_supervisor_signature
+                        )
+                        st.write("DEBUG: PDF generated:", filename)
+                    except Exception as e:
+                        st.error(f"Failed to generate PDF: {e}")
+                        st.write("DEBUG: PDF error:", e)
+                        filename = None
+                    
+                    # Send Email (only if PDF was created)    
+                    if filename:
+                        subject = f"Pay Exception Form: {pay_form_data['name']} on {pay_form_data['date']}"
+                        body = f"""
+                        A pay exception form has been submitted.
 
-                Operator: {pay_form_data['name']}
-                Date: {pay_form_data['date']}
-                Run #: {pay_form_data['run']}
+                        Operator: {pay_form_data['name']}
+                        Date: {pay_form_data['date']}
+                        Run #: {pay_form_data['run']}
 
-                See attached PDF for details.
-                """
-                try:
-                    success, error = send_pdf_email(
-                        filename,
-                        pay_form_data,
-                        subject,
-                        body,
-                        to_email=st.secrets["to_emails"],
-                        cc_emails=st.secrets["cc_emails"],
-                    )
-                    st.write("DEBUG: Email send result:", success, error)
-                    if not success:
-                        st.error(f"Failed to send email: {error}")
-                except Exception as e:
-                    st.error(f"Failed to send email: {e}")
-                    st.write("DEBUG: Email error:", e)
-            st.success("Pay Exception Form submitted!")
-            st.write("DEBUG: Pay Exception Form submitted, waiting for user action.")
-            if st.button("Return Home", key="pay_exception_return_after_submit"):
-                st.session_state["page"] = "home"
-                st.rerun()
-        
-    if st.button("Clear", key="pay_exception_clear_bottom"):
-        st.write("DEBUG: Pay Exception form Clear button pressed.")
-        for key in list(st.session_state.keys()):
-            if key not in ("form_key", "page"):
-                del st.session_state[key]
-        st.session_state["form_key"] += 1
-        st.rerun()
+                        See attached PDF for details.
+                        """
+                        try:
+                            success, error = send_pdf_email(
+                                filename,
+                                pay_form_data,
+                                subject,
+                                body,
+                                to_email=st.secrets["to_emails"],
+                                cc_emails=st.secrets["cc_emails"],
+                            )
+                            st.write("DEBUG: Email send result:", success, error)
+                            if not success:
+                                st.error(f"Failed to send email: {error}")
+                        except Exception as e:
+                            st.error(f"Failed to send email: {e}")
+                            st.write("DEBUG: Email error:", e)
+                    st.session_state["pay_form_data"] = pay_form_data
+                    st.session_state["pay_exception_submitted"] = True
+                    st.write("DEBUG: Setting pay_exception_submitted to True and rerunning.")
+                    st.rerun()
+            
+        if st.button("Clear", key="pay_exception_clear_bottom"):
+            st.write("DEBUG: Pay Exception form Clear button pressed.")
+            for key in list(st.session_state.keys()):
+                if key not in ("form_key", "page"):
+                    del st.session_state[key]
+            st.session_state["form_key"] += 1
+            st.session_state["pay_exception_submitted"] = False
+            st.rerun()
+            
+    else:
+        st.success("Pay Exception Form submitted!")
+        st.write("DEBUG: Pay Exception form submitted message shown.")
+        if st.button("Clear", key="pay_exception_clear_bottom"):
+            st.write("DEBUG: Pay Exception form Clear button pressed (after submission).")
+            for key in list(st.session_state.keys()):
+                if key not in ("form_key", "page"):
+                    del st.session_state[key]
+            st.session_state["form_key"] += 1
+            st.session_state["pay_exception_submitted"] = False
+            st.rerun()      
 
 
 # App Navigation
