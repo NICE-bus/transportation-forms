@@ -104,6 +104,16 @@ def save_submission_pdf(data, field_list, pdf_title, filename, operator_signatur
 
     # --- Fields with bold labels ---
     c.setFont("Helvetica", 14)
+    
+    wrapped_text_fields = [
+        "explanation_of_incident", 
+        "reason_for_non_immediate_report", 
+        "incident_type_other",
+        "pay_explanation",
+        "traffic_location"
+    ]
+
+    
     for label, key in field_list:
         value = data.get(key, "")
         c.setFont("Helvetica-Bold", 12)
@@ -111,6 +121,19 @@ def save_submission_pdf(data, field_list, pdf_title, filename, operator_signatur
         c.setFont("Helvetica", 12)
         c.drawString(250, y, str(value))
         y -= 20
+        if key in wrapped_text_fields and value:
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(72, y, f"{label}:")
+            y -= 16
+            c.setFont("Helvetica", 12)
+            y = draw_wrapped_text(c, value, 90, y, max_width=450)
+            y -= 10
+        else:
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(72, y, f"{label}:")
+            c.setFont("Helvetica", 12)
+            c.drawString(250, y, str(value))
+            y -= 20        
         if y < 100:
             c.showPage()
             y = height - 72
