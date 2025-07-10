@@ -11,11 +11,10 @@ from reportlab.lib.utils import ImageReader, simpleSplit
 import numpy as np
 import yagmail
 
-
 # Helper Functions
 
 def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None):
-    st.write("DEBUG: Preparing to send email with PDF:", pdf_file)
+    # st.write("DEBUG: Preparing to send email with PDF:", pdf_file)
     sender_email = st.secrets["email_user"]
     sender_password = st.secrets["email_password"]
     if not sender_email or not sender_password:
@@ -23,7 +22,7 @@ def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None)
         return False, "Email credentials are not set."
     try:
         yag = yagmail.SMTP(user=sender_email, password=sender_password)
-        st.write("DEBUG: Yagmail SMTP object created.")
+        # st.write("DEBUG: Yagmail SMTP object created.")
         yag.send(
             to=to_email,
             cc=cc_emails,
@@ -31,10 +30,10 @@ def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None)
             contents=body,
             attachments=[pdf_file]
         )
-        st.write("DEBUG: Email sent successfully.")
+        # st.write("DEBUG: Email sent successfully.")
         return True, None
     except Exception as e:
-        st.write("DEBUG: Email send error:", e)
+        # st.write("DEBUG: Email send error:", e)
         return False, str(e)
 
 def serialize_value(val):
@@ -50,25 +49,25 @@ def draw_wrapped_text(c, text, x, y, max_width, font_name="Helvetica", font_size
     return y
 
 def is_signature_present(image_data):
-    st.write("DEBUG: Checking if signature is present.")
+    # st.write("DEBUG: Checking if signature is present.")
     return np.any(image_data[:, :, 3] > 0) and np.any(image_data[:, :, :3] != 255)
 
 def save_to_gsheet(data, worksheet_name, columns):
-    st.write(f"DEBUG: Saving to Google Sheet '{worksheet_name}' with columns:", columns)
-    st.write("DEBUG: Data to save:", data)
+    # st.write(f"DEBUG: Saving to Google Sheet '{worksheet_name}' with columns:", columns)
+    # st.write("DEBUG: Data to save:", data)
     client = gspread.service_account_from_dict(st.secrets["gspread_creds"])
     sheet = client.open("forms").worksheet(worksheet_name)
     row = [serialize_value(data.get(col, "")) for col in columns]
-    st.write("DEBUG: Row to append:", row)
+    # st.write("DEBUG: Row to append:", row)
     sheet.append_row(row)
-    st.write("DEBUG: Row appended to Google Sheet.")
+    # st.write("DEBUG: Row appended to Google Sheet.")
     
 
 def process_signature_img(signature_canvas):
-    st.write("DEBUG: Processing signature image.")
+    # st.write("DEBUG: Processing signature image.")
 
     if signature_canvas is None or signature_canvas.image_data is None:
-        st.write("DEBUG: No signature canvas or image data.")
+        # st.write("DEBUG: No signature canvas or image data.")
         return None
 
     # Convert NumPy array of floats (0-1) to a uint8 array (0-255) for image creation
@@ -83,7 +82,7 @@ def process_signature_img(signature_canvas):
 
 
 def save_submission_pdf(data, field_list, pdf_title, filename, operator_signature_img=None, supervisor_signature_img=None):
-    st.write("DEBUG: Generating PDF:", filename)
+    # st.write("DEBUG: Generating PDF:", filename)
     c = pdf_canvas.Canvas(filename, pagesize=letter)
     width, height = letter
 
@@ -168,7 +167,7 @@ def save_submission_pdf(data, field_list, pdf_title, filename, operator_signatur
             y = image_bottom_y - 30
 
     c.save()
-    st.write("DEBUG: PDF saved:", filename)
+    # st.write("DEBUG: PDF saved:", filename)
     return filename
 
 incident_field_list = [
@@ -242,18 +241,18 @@ if "form_key" not in st.session_state:
     st.session_state["form_key"] = 0
 if "page" not in st.session_state:
     st.session_state["page"] = "home"
-    st.write("DEBUG: Initializing page to home.")
+    # st.write("DEBUG: Initializing page to home.")
     
 def show_incident_form():
     st.title("Operator Incident Report")
-    st.write("DEBUG: show_incident_form called.")
+    # st.write("DEBUG: show_incident_form called.")
     if st.button("Return Home", key="incident_return_top"):
-        st.write("DEBUG: Return Home button pressed.")
+        # st.write("DEBUG: Return Home button pressed.")
         st.session_state["page"] = "home"
         st.session_state["incident_submitted"] = False
         st.rerun()
     if not st.session_state.get("incident_submitted", False):
-        st.write("DEBUG: Incident form is visible.")
+        # st.write("DEBUG: Incident form is visible.")
         
         with st.form(key=f"incident_form_{st.session_state['form_key']}"):
             col1, col2, col3, col4 = st.columns(4)
@@ -500,7 +499,7 @@ def show_incident_form():
 
             submitted = st.form_submit_button("Submit Incident Report")
             if submitted:
-                st.write("DEBUG: Incident form submitted.")
+                # st.write("DEBUG: Incident form submitted.")
                 incident_required_fields = {
                     "Time": time,
                     "Brief": brief,
@@ -520,7 +519,7 @@ def show_incident_form():
 
                 # Check for missing required fields
                 missing = [label for label, value in incident_required_fields.items() if value in ("", None)]
-                st.write("DEBUG: Missing required fields:", missing)
+                # st.write("DEBUG: Missing required fields:", missing)
                 if missing:
                     st.error(f"Please fill in all required fields: {', '.join(missing)}")
                 else:
@@ -558,7 +557,7 @@ def show_incident_form():
                         "signed_sqm_name": signed_sqm_name,
                         "date_submitted": date_submitted,
                     }
-                    st.write("DEBUG: incident_form_data:", incident_form_data)
+                    # st.write("DEBUG: incident_form_data:", incident_form_data)
 
                     incident_columns = [
                         "date", "time", "am_pm1", "brief", "operator_name", "operator_id", "depot", "vehicle", 
@@ -573,10 +572,10 @@ def show_incident_form():
 
                     try:
                         save_to_gsheet(incident_form_data, worksheet_name="Incident Reports", columns=incident_columns)
-                        st.write("DEBUG: Saved incident to Google Sheet.")
+                        # st.write("DEBUG: Saved incident to Google Sheet.")
                     except Exception as e:
                         st.error(f"Failed to save to Google Sheet: {e}")
-                        st.write("DEBUG: Google Sheet error:", e)
+                        # st.write("DEBUG: Google Sheet error:", e)
 
                     # 2. Generate PDF
                     try:
@@ -590,7 +589,7 @@ def show_incident_form():
                             operator_signature_img=operator_signature,
                             supervisor_signature_img=supervisor_signature
                         )
-                        st.write("DEBUG: PDF generated:", filename)
+                        # st.write("DEBUG: PDF generated:", filename)
                     except Exception as e:
                         st.error(f"Failed to generate PDF: {e}")
                         st.error(f"Failed to generate PDF: {e}")
@@ -617,20 +616,20 @@ def show_incident_form():
                                 to_email=st.secrets["to_emails"],
                                 cc_emails=st.secrets["cc_emails"]
                             )
-                            st.write("DEBUG: Email send result:", success, error)
+                            # st.write("DEBUG: Email send result:", success, error)
                             if not success:
                                 st.error(f"Failed to send email: {error}")
                         except Exception as e:
                             st.error(f"Failed to send email: {e}")          
-                            st.write("DEBUG: Email error:", e)
+                            # st.write("DEBUG: Email error:", e)
                     st.session_state["incident_form_data"] = incident_form_data
                     st.session_state["incident_submitted"] = True
-                    st.write("DEBUG: Setting incident_submitted to True and rerunning.")
+                    # st.write("DEBUG: Setting incident_submitted to True and rerunning.")
                     st.rerun()
             
         # Clear button (inside form, but outside submit logic)
         if st.button("Clear", key="incident_clear_bottom"):
-            st.write("DEBUG: Incident form Clear button pressed.")
+            # st.write("DEBUG: Incident form Clear button pressed.")
             for key in list(st.session_state.keys()):
                 if key not in ("form_key", "page"):
                     del st.session_state[key]
@@ -640,9 +639,9 @@ def show_incident_form():
             
     else:
         st.success("Incident Report submitted!")
-        st.write("DEBUG: Incident report submitted message shown.")
+        # st.write("DEBUG: Incident report submitted message shown.")
         if st.button("Clear", key="incident_clear_bottom"):
-            st.write("DEBUG: Incident form Clear button pressed (after submission).")
+            # st.write("DEBUG: Incident form Clear button pressed (after submission).")
             for key in list(st.session_state.keys()):
                 if key not in ("form_key", "page"):
                     del st.session_state[key]
@@ -653,14 +652,14 @@ def show_incident_form():
 
 def show_pay_exception_form():
     st.title("Operator Pay Exception Form")
-    st.write("DEBUG: show_pay_exception_form called.")
+    # st.write("DEBUG: show_pay_exception_form called.")
     if st.button("Return Home", key="pay_exception_return_top"):
-        st.write("DEBUG: Pay Exception Return Home button pressed.")
+        # st.write("DEBUG: Pay Exception Return Home button pressed.")
         st.session_state["page"] = "home"
         st.session_state["pay_exception_submitted"] = False
         st.rerun()
     if not st.session_state.get("pay_exception_submitted", False):
-        st.write("DEBUG: Pay Exception form is visible.")
+        # st.write("DEBUG: Pay Exception form is visible.")
         
         with st.form(key=f"pay_exception_form_{st.session_state['form_key']}"):
             col1, col2 = st.columns(2)
@@ -742,7 +741,7 @@ def show_pay_exception_form():
             submitted = st.form_submit_button("Submit Pay Exception Form")
             
             if submitted:
-                st.write("DEBUG: Pay Exception form submitted.")
+                # st.write("DEBUG: Pay Exception form submitted.")
                 pay_required_fields = {
                     "Date": date,
                     "Name": name,
@@ -755,7 +754,7 @@ def show_pay_exception_form():
                 }
                 
                 missing = [label for label, value in pay_required_fields.items() if value in ("", None, "")]
-                st.write("DEBUG: Missing required fields:", missing)
+                # st.write("DEBUG: Missing required fields:", missing)
                 if missing:
                     st.error(f"Please fill in all required fields: {', '.join(missing)}")
             
@@ -789,7 +788,7 @@ def show_pay_exception_form():
                         "pay_operator_signature_date": pay_operator_signature_date,
                         "pay_supervisor_signature_date": pay_supervisor_signature_date,
                     }
-                    st.write("DEBUG: pay_form_data:", pay_form_data)
+                    # st.write("DEBUG: pay_form_data:", pay_form_data)
                     pay_columns = [
                         "date", "name", "run", "bus_number", "id_number", "route", "clock_in", "am_pm1",
                         "clock_in_before","am_pm2", "clock_out", "am_pm3", "actual_clock_out",  "am_pm4", 
@@ -797,13 +796,13 @@ def show_pay_exception_form():
                         "road_call", "traffic_location", "time_reported_to_command", "am_pm5", "pay_explanation",
                         "pay_operator_signature_date", "pay_supervisor_signature_date",
                     ]
-                    st.write("DEBUG: pay_columns:", pay_columns)
+                    # st.write("DEBUG: pay_columns:", pay_columns)
                     try:
                         save_to_gsheet(pay_form_data, worksheet_name="Pay Exception Forms", columns=pay_columns)
-                        st.write("DEBUG: Saved pay exception to Google Sheet.")
+                        # st.write("DEBUG: Saved pay exception to Google Sheet.")
                     except Exception as e:
                         st.error(f"Failed to save to Google Sheet: {e}")
-                        st.write("DEBUG: Google Sheet error:", e)
+                        # st.write("DEBUG: Google Sheet error:", e)
                         
                     try:
                         # For pay exception
@@ -816,10 +815,10 @@ def show_pay_exception_form():
                             operator_signature_img=pay_operator_signature,
                             supervisor_signature_img=pay_supervisor_signature
                         )
-                        st.write("DEBUG: PDF generated:", filename)
+                        # st.write("DEBUG: PDF generated:", filename)
                     except Exception as e:
                         st.error(f"Failed to generate PDF: {e}")
-                        st.write("DEBUG: PDF error:", e)
+                        # st.write("DEBUG: PDF error:", e)
                         filename = None
                     
                     # Send Email (only if PDF was created)    
@@ -841,21 +840,21 @@ def show_pay_exception_form():
                                 subject,
                                 body,
                                 to_email=st.secrets["to_emails"],
-                                cc_emails=st.secrets["cc_emails"],
+                                cc_emails=st.secrets["cc_emails"]
                             )
-                            st.write("DEBUG: Email send result:", success, error)
+                            # st.write("DEBUG: Email send result:", success, error)
                             if not success:
                                 st.error(f"Failed to send email: {error}")
                         except Exception as e:
                             st.error(f"Failed to send email: {e}")
-                            st.write("DEBUG: Email error:", e)
+                            # st.write("DEBUG: Email error:", e)
                     st.session_state["pay_form_data"] = pay_form_data
                     st.session_state["pay_exception_submitted"] = True
-                    st.write("DEBUG: Setting pay_exception_submitted to True and rerunning.")
+                    # st.write("DEBUG: Setting pay_exception_submitted to True and rerunning.")
                     st.rerun()
             
         if st.button("Clear", key="pay_exception_clear_bottom"):
-            st.write("DEBUG: Pay Exception form Clear button pressed.")
+            # st.write("DEBUG: Pay Exception form Clear button pressed.")
             for key in list(st.session_state.keys()):
                 if key not in ("form_key", "page"):
                     del st.session_state[key]
@@ -865,9 +864,9 @@ def show_pay_exception_form():
             
     else:
         st.success("Pay Exception Form submitted!")
-        st.write("DEBUG: Pay Exception form submitted message shown.")
+        # st.write("DEBUG: Pay Exception form submitted message shown.")
         if st.button("Clear", key="pay_exception_clear_bottom"):
-            st.write("DEBUG: Pay Exception form Clear button pressed (after submission).")
+            # st.write("DEBUG: Pay Exception form Clear button pressed (after submission).")
             for key in list(st.session_state.keys()):
                 if key not in ("form_key", "page"):
                     del st.session_state[key]
@@ -880,27 +879,27 @@ def show_pay_exception_form():
 
 if "page" not in st.session_state:
     st.session_state["page"] = "home"
-    st.write("DEBUG: Initializing page to home.")
+    # st.write("DEBUG: Initializing page to home.")
     
 if st.session_state["page"] == "home":
     st.title("Welcome")
     st.write("Please select a form to fill out:")
-    st.write("DEBUG: Home page displayed.")
+    # st.write("DEBUG: Home page displayed.")
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Operator Incident Report"):
-            st.write("DEBUG: Operator Incident Report button pressed.")
+            # st.write("DEBUG: Operator Incident Report button pressed.")
             st.session_state["page"] = "incident"
             st.rerun()
     with col2:
         if st.button("Operator Pay Exception Form"):
-            st.write("DEBUG: Operator Pay Exception Form button pressed.")
+            # st.write("DEBUG: Operator Pay Exception Form button pressed.")
             st.session_state["page"] = "pay_exception"
             st.rerun()
             
 elif st.session_state["page"] == "incident":
-    st.write("DEBUG: Navigating to incident form.")
+    # st.write("DEBUG: Navigating to incident form.")
     show_incident_form()
 elif st.session_state["page"] == "pay_exception":
-    st.write("DEBUG: Navigating to pay exception form.")
+    # st.write("DEBUG: Navigating to pay exception form.")
     show_pay_exception_form()
