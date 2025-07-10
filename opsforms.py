@@ -67,24 +67,19 @@ def save_to_gsheet(data, worksheet_name, columns):
 def process_signature_img(signature_canvas):
     st.write("DEBUG: Processing signature image.")
 
-    if signature_canvas.image_data is None:
-        st.write("DEBUG: No signature image data.")
+    if signature_canvas is None or signature_canvas.image_data is None:
+        st.write("DEBUG: No signature canvas or image data.")
         return None
 
-    # Convert NumPy array to RGBA PIL Image
-    img_array = signature_canvas.image_data.astype(np.uint8)
+    # Convert NumPy array of floats (0-1) to a uint8 array (0-255) for image creation
+    img_array = (signature_canvas.image_data * 255).astype(np.uint8)
     signature_img = Image.fromarray(img_array, mode="RGBA")
 
     # Create a white RGBA background
     white_bg = Image.new("RGBA", signature_img.size, "WHITE")
-
     # Paste signature over white background using itself as mask
     white_bg.paste(signature_img, (0, 0), signature_img)
-
-    # Convert to RGB (removes transparency)
-    final_img = white_bg.convert("RGB")
-
-    return final_img
+    return white_bg.convert("RGB")
 
 
 def save_submission_pdf(data, field_list, pdf_title, filename, operator_signature_img=None, supervisor_signature_img=None):
@@ -148,13 +143,6 @@ def save_submission_pdf(data, field_list, pdf_title, filename, operator_signatur
             c.drawString(72, y, "Operator Signature:")
             image_bottom_y = y - 15 - pdf_sig_height
             processed_img = process_signature_img(operator_signature_img)
-            inverted_img = ImageOps.invert(processed_img)
-            smooth_img = inverted_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
-            buf = io.BytesIO()
-            smooth_img.save(buf, format="PNG")
-            buf.seek(0)
-            img_reader = ImageReader(buf)
-            c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
             if processed_img:
                 smooth_img = processed_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
                 buf = io.BytesIO()
@@ -170,13 +158,6 @@ def save_submission_pdf(data, field_list, pdf_title, filename, operator_signatur
             c.drawString(72, y, "Supervisor Signature:")
             image_bottom_y = y - 15 - pdf_sig_height
             processed_img = process_signature_img(supervisor_signature_img)
-            inverted_img = ImageOps.invert(processed_img)
-            smooth_img = inverted_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
-            buf = io.BytesIO()
-            smooth_img.save(buf, format="PNG")
-            buf.seek(0)
-            img_reader = ImageReader(buf)
-            c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
             if processed_img:
                 smooth_img = processed_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
                 buf = io.BytesIO()
@@ -184,7 +165,7 @@ def save_submission_pdf(data, field_list, pdf_title, filename, operator_signatur
                 buf.seek(0)
                 img_reader = ImageReader(buf)
                 c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
-            y = image_bottom_y - 3
+            y = image_bottom_y - 30
 
     c.save()
     st.write("DEBUG: PDF saved:", filename)
