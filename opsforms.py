@@ -116,11 +116,6 @@ def save_submission_pdf(data, field_list, pdf_title, filename, operator_signatur
     
     for label, key in field_list:
         value = data.get(key, "")
-        # c.setFont("Helvetica-Bold", 12)
-        # c.drawString(72, y, f"{label}:")
-        # c.setFont("Helvetica", 12)
-        # c.drawString(250, y, str(value))
-        # y -= 20
         if key in wrapped_text_fields:
             c.setFont("Helvetica-Bold", 12)
             c.drawString(72, y, f"{label}:")
@@ -161,7 +156,15 @@ def save_submission_pdf(data, field_list, pdf_title, filename, operator_signatur
             buf.seek(0)
             img_reader = ImageReader(buf)
             c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
+            if processed_img:
+                smooth_img = processed_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
+                buf = io.BytesIO()
+                smooth_img.save(buf, format="PNG")
+                buf.seek(0)
+                img_reader = ImageReader(buf)
+                c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
             y = image_bottom_y - 30
+
 
         if supervisor_signature_img is not None:
             c.setFont("Helvetica-Bold", 12)
@@ -175,7 +178,14 @@ def save_submission_pdf(data, field_list, pdf_title, filename, operator_signatur
             buf.seek(0)
             img_reader = ImageReader(buf)
             c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
-            y = image_bottom_y - 30
+            if processed_img:
+                smooth_img = processed_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
+                buf = io.BytesIO()
+                smooth_img.save(buf, format="PNG")
+                buf.seek(0)
+                img_reader = ImageReader(buf)
+                c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
+            y = image_bottom_y - 3
 
     c.save()
     st.write("DEBUG: PDF saved:", filename)
