@@ -263,6 +263,7 @@ pay_field_list = [
     ("AM/PM", "am_pm5"),
     ("Explanation", "pay_explanation"),
     ("Operator Signature Date", "pay_operator_signature_date"),
+    ("Signing SQM Name", "pay_signing_sqm_name"),
     ("Supervisor Signature Date", "pay_supervisor_signature_date"),
 ]
 
@@ -768,6 +769,7 @@ def show_pay_exception_form():
                 key="pay_supervisor_signature",
             )
             
+            pay_supervisor_signature_name = st.text_input("Signing SQM Name", key="pay_signing_sqm_name")
             pay_supervisor_signature_date = st.date_input("Date", value=datetime.date.today(), key="pay_supervisor_signature_date")        
             
             submitted = st.form_submit_button("Submit Pay Exception Form")
@@ -782,6 +784,7 @@ def show_pay_exception_form():
                     "ID #": id_number,
                     "Route #": route,
                     "Operator Signature Date": pay_operator_signature_date,
+                    "Signing SQM Name": pay_supervisor_signature_name,
                     "Supervisor Signature Date": pay_supervisor_signature_date,
                 }
                 
@@ -823,6 +826,7 @@ def show_pay_exception_form():
                         "am_pm5": am_pm5,
                         "pay_explanation": pay_explanation,
                         "pay_operator_signature_date": pay_operator_signature_date,
+                        "pay_signing_sqm_name": pay_supervisor_signature_name,
                         "pay_supervisor_signature_date": pay_supervisor_signature_date,
                     }
                     # st.write("DEBUG: pay_form_data:", pay_form_data)
@@ -831,7 +835,7 @@ def show_pay_exception_form():
                         "clock_in_before","am_pm2", "clock_out", "am_pm3", "actual_clock_out",  "am_pm4", 
                         "weather", "extra_work", "traffic_delay", "incident_report", "bus_exchange", "missed_meal", 
                         "road_call", "traffic_location", "time_reported_to_command", "am_pm5", "pay_explanation",
-                        "pay_operator_signature_date", "pay_supervisor_signature_date",
+                        "pay_operator_signature_date", "pay_signing_sqm_name""pay_supervisor_signature_date",
                     ]
                     # st.write("DEBUG: pay_columns:", pay_columns)
                     try:
