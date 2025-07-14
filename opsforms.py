@@ -14,9 +14,15 @@ import yagmail
 # --- Hide Streamlit Style ---
 hide_streamlit_style = """
             <style>
-            header {display: none;}
+            [data-testid="stHeader"] {display: none;}
             #MainMenu {display: none;}
             footer {display: none;}
+
+            /* When a caption for an error message appears, highlight the border of the next text/text_area input. */
+            [data-testid="stCaption"] + [data-testid="stTextInput"] input,
+            [data-testid="stCaption"] + [data-testid="stTextArea"] textarea {
+                border-color: red;
+            }
             </style>
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True) 
@@ -25,7 +31,8 @@ def highlight_missing_field(field_key, form_type):
     """Displays a 'required' message if the field is marked as missing in session_state."""
     session_key = f"missing_{form_type}_fields"
     if field_key in st.session_state.get(session_key, []):
-        st.markdown('<p style="color:red;font-size:0.9em;">* This field is required</p>', unsafe_allow_html=True)
+        # Use st.caption for semantically correct helper text. The CSS above will use this to highlight the input.
+        st.caption('*This field is required*')
 
 # Helper Functions
 
