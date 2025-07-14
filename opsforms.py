@@ -21,6 +21,12 @@ hide_streamlit_style = """
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True) 
 
+def highlight_missing_field(field_key, form_type):
+    """Displays a 'required' message if the field is marked as missing in session_state."""
+    session_key = f"missing_{form_type}_fields"
+    if field_key in st.session_state.get(session_key, []):
+        st.markdown('<p style="color:red;font-size:0.9em;">* This field is required</p>', unsafe_allow_html=True)
+
 # Helper Functions
 
 def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None):
@@ -322,6 +328,7 @@ def show_incident_form():
                     key="incident_operator_name",
                     value=st.session_state.get("incident_operator_name", "")
                 )
+                highlight_missing_field("incident_vehicle", "incident")
                 vehicle = st.text_input(
                     "Vehicle #",
                     key="incident_vehicle",
@@ -532,30 +539,37 @@ def show_incident_form():
             submitted = st.form_submit_button("Submit Incident Report")
             if submitted:
                 # st.write("DEBUG: Incident form submitted.")
+                # Map widget keys to their labels and values for validation
                 incident_required_fields = {
-                    "Time": time,
-                    "Brief": brief,
-                    "Operator Name": operator_name,
-                    "Vehicle #": vehicle,
-                    "Operator ID": operator_id,
-                    "Route #": route,
-                    "Deport": depot,
-                    "Run #": run,                
-                    "Location of incident": incident_location,
-                    "Explain what happened": explanation_of_incident,
-                    "Signed SQM Name": signed_sqm_name,
+                    "incident_time": ("Time", time),
+                    "incident_brief": ("Brief #", brief),
+                    "incident_operator_name": ("Operator Name", operator_name),
+                    "incident_vehicle": ("Vehicle #", vehicle),
+                    "incident_operator_id": ("Operator ID", operator_id),
+                    "incident_route": ("Route #", route),
+                    "incident_depot": ("Depot", depot),
+                    "incident_run": ("Run #", run),
+                    "incident_location": ("Location of incident", incident_location),
+                    "explanation_of_incident": ("Explain what happened", explanation_of_incident),
+                    "incident_signed_sqm_name": ("Signed SQM Name", signed_sqm_name),
                 }
 
                 # Check for missing required fields
-                missing = [label for label, value in incident_required_fields.items() if value in ("", None)]
-                # st.write("DEBUG: Missing required fields:", missing)
-                if missing:
-                    st.error(f"Please fill in all required fields: {', '.join(missing)}")
+                missing_fields = {key: label for key, (label, value) in incident_required_fields.items() if not value}
+
+                if missing_fields:
+                    # Store the keys of missing fields in session state
+                    st.session_state['missing_incident_fields'] = list(missing_fields.keys())
+                    # Display a general error message with the labels of missing fields
+                    st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
+                    st.rerun() # Rerun the app to display the highlights
                 elif not is_signature_present(operator_signature.image_data):
                     st.error("Operator signature is required.")
                 elif not is_signature_present(supervisor_signature.image_data):
                     st.error("Supervisor signature is required.")
                 else:
+                    # On successful validation, clear any previous missing field flags
+                    st.session_state['missing_incident_fields'] = []
                     incident_form_data = {
                         "date": date,
                         "time": time,
