@@ -66,45 +66,26 @@ def save_to_gsheet(data, worksheet_name, columns):
     # st.write("DEBUG: Row appended to Google Sheet.")
 
 def process_signature_img(signature_canvas):
-    if signature_canvas is None or signature_canvas.image_data is None:
+    # st.write("DEBUG: Processing signature image.")
+
+    if signature_canvas.image_data is None:
+        # st.write("DEBUG: No signature image data.")
         return None
-    
-    image_data = signature_canvas.image_data
 
-    # We only care about the alpha channel as the mask.
-    alpha_channel = image_data[:, :, 3]
-    height, width = alpha_channel.shape
+    # Convert NumPy array to RGBA PIL Image
+    img_array = signature_canvas.image_data.astype(np.uint8)
+    signature_img = Image.fromarray(img_array, mode="RGBA")
 
-    # Create a mask from the alpha channel. This tells us where the user has drawn.
-    mask = Image.fromarray(alpha_channel, mode="L")
+    # Create a white RGBA background
+    white_bg = Image.new("RGBA", signature_img.size, "WHITE")
 
-    # Create a new TRANSPARENT RGBA image. This is the key change.
-    # The background will be transparent, and we'll draw black strokes on it.
-    signature_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    # Paste signature over white background using itself as mask
+    white_bg.paste(signature_img, (0, 0), signature_img)
 
-    # Create a solid black image to be used for the strokes.
-    black_ink = Image.new("RGB", (width, height), "black")
+    # Convert to RGB (removes transparency)
+    final_img = white_bg.convert("RGB")
 
-    # Paste the black ink onto our transparent canvas, but only where the mask is non-zero.
-    # Pillow will correctly handle placing the opaque black ink onto the transparent background.
-    signature_img.paste(black_ink, (0, 0), mask)
-
-    return signature_img
-
-def _draw_signature_on_pdf(c, y_pos, signature_label, signature_canvas_data):
-    """Helper to draw a signature block on the PDF canvas."""
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(72, y_pos, signature_label)
-
-    pdf_sig_width = 400
-    pdf_sig_height = int(pdf_sig_width * (150 / 600)) # Assumes 600x150 canvas
-    image_bottom_y = y_pos - 15 - pdf_sig_height
-
-    processed_img = process_signature_img(signature_canvas_data)
-    if processed_img:
-        smooth_img = processed_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
-        c.drawImage(ImageReader(smooth_img), 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
-    return image_bottom_y - 30
+    return final_img
 
 def save_submission_pdf(data, field_list, pdf_title, filename, operator_signature_img=None, supervisor_signature_img=None):
     # st.write("DEBUG: Generating PDF:", filename)
@@ -151,7 +132,7 @@ def save_submission_pdf(data, field_list, pdf_title, filename, operator_signatur
             c.showPage()
             y = height - 72
             c.setFont("Helvetica", 14)
-
+            
     # --- Signatures (optional) ---
     if operator_signature_img is not None or supervisor_signature_img is not None:
         if y < 350:
@@ -159,11 +140,52 @@ def save_submission_pdf(data, field_list, pdf_title, filename, operator_signatur
             y = height - 72
             c.setFont("Helvetica", 14)
 
+        pdf_sig_width = 400
+        pdf_sig_height = int(pdf_sig_width * (150 / 600))
+
         if operator_signature_img is not None:
-            y = _draw_signature_on_pdf(c, y, "Operator Signature:", operator_signature_img)
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(72, y, "Operator Signature:")
+            image_bottom_y = y - 15 - pdf_sig_height
+            processed_img = process_signature_img(operator_signature_img)
+            inverted_img = ImageOps.invert(processed_img)
+            smooth_img = inverted_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
+            buf = io.BytesIO()
+            smooth_img.save(buf, format="PNG")
+            buf.seek(0)
+            img_reader = ImageReader(buf)
+            c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
+            if processed_img:
+                smooth_img = processed_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
+                buf = io.BytesIO()
+                smooth_img.save(buf, format="PNG")
+                buf.seek(0)
+                img_reader = ImageReader(buf)
+                c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
+            y = image_bottom_y - 30
+
 
         if supervisor_signature_img is not None:
-            y = _draw_signature_on_pdf(c, y, "Supervisor Signature:", supervisor_signature_img)
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(72, y, "Supervisor Signature:")
+            image_bottom_y = y - 15 - pdf_sig_height
+            processed_img = process_signature_img(supervisor_signature_img)
+            inverted_img = ImageOps.invert(processed_img)
+            smooth_img = inverted_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
+            buf = io.BytesIO()
+            smooth_img.save(buf, format="PNG")
+            buf.seek(0)
+            img_reader = ImageReader(buf)
+            c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
+            y = image_bottom_y - 30
+            if processed_img:
+                smooth_img = processed_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
+                buf = io.BytesIO()
+                smooth_img.save(buf, format="PNG")
+                buf.seek(0)
+                img_reader = ImageReader(buf)
+                c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
+            y = image_bottom_y - 3
 
     c.save()
     # st.write("DEBUG: PDF saved:", filename)
