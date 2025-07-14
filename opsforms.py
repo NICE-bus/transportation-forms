@@ -14,8 +14,9 @@ import yagmail
 # --- Hide Streamlit Style ---
 hide_streamlit_style = """
             <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
+            header {display: none;}
+            #MainMenu {display: none;}
+            footer {display: none;}
             </style>
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True) 
