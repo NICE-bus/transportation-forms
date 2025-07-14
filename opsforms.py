@@ -11,6 +11,15 @@ from reportlab.lib.utils import ImageReader, simpleSplit
 import numpy as np
 import yagmail
 
+# --- Hide Streamlit Style ---
+hide_streamlit_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True) 
+
 # Helper Functions
 
 def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None):
@@ -530,10 +539,7 @@ def show_incident_form():
                     "Route #": route,
                     "Deport": depot,
                     "Run #": run,                
-                    "Reported to Dispatcher": reported_to_dispatcher,
                     "Location of incident": incident_location,
-                    "Passenger Name": passenger_name,
-                    "Passenger ID/Seat #": passenger_id,
                     "Explain what happened": explanation_of_incident,
                     "Signed SQM Name": signed_sqm_name,
                 }
