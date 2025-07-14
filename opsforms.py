@@ -792,7 +792,7 @@ def show_pay_exception_form():
                 if missing_fields:
                     st.session_state['missing_pay_exception_fields'] = list(missing_fields.keys())
                     st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
-                    st.rerun()
+                    # st.rerun()
                 elif not is_signature_present(pay_operator_signature.image_data):
                     st.error("Operator signature is required.")
                 elif not is_signature_present(pay_supervisor_signature.image_data):
