@@ -69,25 +69,24 @@ def process_signature_img(signature_canvas):
     if signature_canvas is None or signature_canvas.image_data is None:
         return None
     
-    # This is a more robust method that rebuilds the signature from the alpha channel.
-    # It ensures the stroke is black, regardless of the canvas's stroke/background color settings.
     image_data = signature_canvas.image_data
 
     # We only care about the alpha channel as the mask.
-    # The alpha channel is the 4th channel in the (height, width, 4) array.
     alpha_channel = image_data[:, :, 3]
-
-    # Create a new all-white RGB image.
     height, width = alpha_channel.shape
-    signature_img = Image.new("RGB", (width, height), "white")
 
     # Create a mask from the alpha channel. This tells us where the user has drawn.
     mask = Image.fromarray(alpha_channel, mode="L")
 
+    # Create a new TRANSPARENT RGBA image. This is the key change.
+    # The background will be transparent, and we'll draw black strokes on it.
+    signature_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+
     # Create a solid black image to be used for the strokes.
     black_ink = Image.new("RGB", (width, height), "black")
 
-    # Paste the black ink onto our white canvas, but only where the mask is non-zero.
+    # Paste the black ink onto our transparent canvas, but only where the mask is non-zero.
+    # Pillow will correctly handle placing the opaque black ink onto the transparent background.
     signature_img.paste(black_ink, (0, 0), mask)
 
     return signature_img
