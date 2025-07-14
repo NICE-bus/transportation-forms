@@ -49,8 +49,11 @@ def draw_wrapped_text(c, text, x, y, max_width, font_name="Helvetica", font_size
     return y
 
 def is_signature_present(image_data):
-    # st.write("DEBUG: Checking if signature is present.")
-    return np.any(image_data[:, :, 3] > 0) and np.any(image_data[:, :, :3] != 255)
+    if image_data is None:
+        return False
+    # A blank canvas will have an alpha channel of all zeros.
+    # We check if any pixel has an alpha value greater than 0.
+    return np.any(image_data[:, :, 3] > 0)
 
 def save_to_gsheet(data, worksheet_name, columns):
     # st.write(f"DEBUG: Saving to Google Sheet '{worksheet_name}' with columns:", columns)
@@ -61,18 +64,18 @@ def save_to_gsheet(data, worksheet_name, columns):
     # st.write("DEBUG: Row to append:", row)
     sheet.append_row(row)
     # st.write("DEBUG: Row appended to Google Sheet.")
-    
 
 def process_signature_img(signature_canvas):
-    # st.write("DEBUG: Processing signature image.")
-
     if signature_canvas is None or signature_canvas.image_data is None:
-        # st.write("DEBUG: No signature canvas or image data.")
         return None
 
-    # Convert NumPy array of floats (0-1) to a uint8 array (0-255) for image creation
-    img_array = (signature_canvas.image_data * 255).astype(np.uint8)
-    signature_img = Image.fromarray(img_array, mode="RGBA")
+    # The canvas returns a numpy array of uint8 values (0-255) with shape (height, width, 4)
+    # The multiplication by 255 is no longer needed and was causing the issue.
+    if signature_canvas.image_data.dtype != np.uint8:
+        # Ensure data is in the correct format if it's not already
+        signature_canvas.image_data = signature_canvas.image_data.astype(np.uint8)
+
+    signature_img = Image.fromarray(signature_canvas.image_data, mode="RGBA")
 
     # Create a white RGBA background
     white_bg = Image.new("RGBA", signature_img.size, "WHITE")
@@ -80,6 +83,20 @@ def process_signature_img(signature_canvas):
     white_bg.paste(signature_img, (0, 0), signature_img)
     return white_bg.convert("RGB")
 
+def _draw_signature_on_pdf(c, y_pos, signature_label, signature_canvas_data):
+    """Helper to draw a signature block on the PDF canvas."""
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(72, y_pos, signature_label)
+
+    pdf_sig_width = 400
+    pdf_sig_height = int(pdf_sig_width * (150 / 600)) # Assumes 600x150 canvas
+    image_bottom_y = y_pos - 15 - pdf_sig_height
+
+    processed_img = process_signature_img(signature_canvas_data)
+    if processed_img:
+        smooth_img = processed_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
+        c.drawImage(ImageReader(smooth_img), 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
+    return image_bottom_y - 30
 
 def save_submission_pdf(data, field_list, pdf_title, filename, operator_signature_img=None, supervisor_signature_img=None):
     # st.write("DEBUG: Generating PDF:", filename)
@@ -134,37 +151,11 @@ def save_submission_pdf(data, field_list, pdf_title, filename, operator_signatur
             y = height - 72
             c.setFont("Helvetica", 14)
 
-        pdf_sig_width = 400
-        pdf_sig_height = int(pdf_sig_width * (150 / 600))
-
         if operator_signature_img is not None:
-            c.setFont("Helvetica-Bold", 12)
-            c.drawString(72, y, "Operator Signature:")
-            image_bottom_y = y - 15 - pdf_sig_height
-            processed_img = process_signature_img(operator_signature_img)
-            if processed_img:
-                smooth_img = processed_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
-                buf = io.BytesIO()
-                smooth_img.save(buf, format="PNG")
-                buf.seek(0)
-                img_reader = ImageReader(buf)
-                c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
-            y = image_bottom_y - 30
-
+            y = _draw_signature_on_pdf(c, y, "Operator Signature:", operator_signature_img)
 
         if supervisor_signature_img is not None:
-            c.setFont("Helvetica-Bold", 12)
-            c.drawString(72, y, "Supervisor Signature:")
-            image_bottom_y = y - 15 - pdf_sig_height
-            processed_img = process_signature_img(supervisor_signature_img)
-            if processed_img:
-                smooth_img = processed_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
-                buf = io.BytesIO()
-                smooth_img.save(buf, format="PNG")
-                buf.seek(0)
-                img_reader = ImageReader(buf)
-                c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
-            y = image_bottom_y - 30
+            y = _draw_signature_on_pdf(c, y, "Supervisor Signature:", supervisor_signature_img)
 
     c.save()
     # st.write("DEBUG: PDF saved:", filename)
@@ -522,6 +513,10 @@ def show_incident_form():
                 # st.write("DEBUG: Missing required fields:", missing)
                 if missing:
                     st.error(f"Please fill in all required fields: {', '.join(missing)}")
+                elif not is_signature_present(operator_signature.image_data):
+                    st.error("Operator signature is required.")
+                elif not is_signature_present(supervisor_signature.image_data):
+                    st.error("Supervisor signature is required.")
                 else:
                     incident_form_data = {
                         "date": date,
@@ -753,11 +748,16 @@ def show_pay_exception_form():
                     "Supervisor Signature Date": pay_supervisor_signature_date,
                 }
                 
-                missing = [label for label, value in pay_required_fields.items() if value in ("", None, "")]
+                missing = [label for label, value in pay_required_fields.items() if not value]
                 # st.write("DEBUG: Missing required fields:", missing)
                 if missing:
                     st.error(f"Please fill in all required fields: {', '.join(missing)}")
-            
+                elif not pay_explanation:
+                    st.error("The 'Explanation (Must be filled in.)' field is required.")
+                elif not is_signature_present(pay_operator_signature.image_data):
+                    st.error("Operator signature is required.")
+                elif not is_signature_present(pay_supervisor_signature.image_data):
+                    st.error("Supervisor signature is required.")
                 else:
                     pay_form_data = {
                         "date": date,
