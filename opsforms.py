@@ -238,7 +238,7 @@ incident_field_list = [
     ("Passenger Name", "passenger_name"),
     ("Passenger ID/Seat #", "passenger_id"),
     ("Explanation of Incident", "explanation_of_incident"),
-    ("Signed SQM Name", "signed_sqm_name"),
+    ("Signing SQM Name", "signed_sqm_name"),
     ("Date Submitted", "date_submitted"),
 ]
 
@@ -297,72 +297,68 @@ def show_incident_form():
             with col1:
                 date = st.date_input(
                     "Today's Date",
-                    value=st.session_state.get("incident_date", datetime.date.today()),
                     key="incident_date"
                 )
             with col2:
+                highlight_missing_field("incident_time", "incident")
                 time = st.text_input(
                     "Time",
-                    key="incident_time",
-                    value=st.session_state.get("incident_time", "")
+                    key="incident_time"
                 )
             with col3:
                 am_pm1 = st.radio(
                     "AM/PM",
                     options=["AM", "PM"],
                     horizontal=True,
-                    key="incident_am_pm1",
-                    index=0 if st.session_state.get("incident_am_pm1", "AM") == "AM" else 1
+                    key="incident_am_pm1"
                 )
             with col4:
+                highlight_missing_field("incident_brief", "incident")
                 brief = st.text_input(
                     "Brief #",
-                    key="incident_brief",
-                    value=st.session_state.get("incident_brief", "")
+                    key="incident_brief"
                 )
 
             col5, col6, col7 = st.columns(3)
             with col5:
+                highlight_missing_field("incident_operator_name", "incident")
                 operator_name = st.text_input(
                     "Operator Name",
-                    key="incident_operator_name",
-                    value=st.session_state.get("incident_operator_name", "")
+                    key="incident_operator_name"
                 )
                 highlight_missing_field("incident_vehicle", "incident")
                 vehicle = st.text_input(
                     "Vehicle #",
-                    key="incident_vehicle",
-                    value=st.session_state.get("incident_vehicle", "")
+                    key="incident_vehicle"
                 )
             with col6:
+                highlight_missing_field("incident_operator_id", "incident")
                 operator_id = st.text_input(
                     "Operator ID",
-                    key="incident_operator_id",
-                    value=st.session_state.get("incident_operator_id", "")
+                    key="incident_operator_id"
                 )
+                highlight_missing_field("incident_route", "incident")
                 route = st.text_input(
                     "Route #",
-                    key="incident_route",
-                    value=st.session_state.get("incident_route", "")
+                    key="incident_route"
                 )
             with col7:
+                highlight_missing_field("incident_depot", "incident")
                 depot = st.text_input(
                     "Depot",
-                    key="incident_depot",
-                    value=st.session_state.get("incident_depot", "")
+                    key="incident_depot"
                 )
+                highlight_missing_field("incident_run", "incident")
                 run = st.text_input(
                     "Run #",
-                    key="incident_run",
-                    value=st.session_state.get("incident_run", "")
+                    key="incident_run"
                 )
 
             report_submitted_to = st.radio(
                 "Report Submitted To",
                 options=["SQM", "Dispatch Window", "Safety Dept"],
                 horizontal=True,
-                key="incident_report_submitted_to",
-                index=["SQM", "Dispatch Window", "Safety Dept"].index(st.session_state.get("incident_report_submitted_to", "SQM"))
+                key="incident_report_submitted_to"
             )
 
             incident_type = st.radio(
@@ -372,17 +368,12 @@ def show_incident_form():
                     "Vehicle Damage", "Passenger Complaint", "No Damage Vehicle Incident Report", "Other"
                 ],
                 horizontal=True,
-                key="incident_type",
-                index=[
-                    "Passenger Accident", "Passenger Incident", "Passenger Injury", "MVA",
-                    "Vehicle Damage", "Passenger Complaint", "No Damage Vehicle Incident Report", "Other"
-                ].index(st.session_state.get("incident_type", "Passenger Accident"))
+                key="incident_type"
             )
 
             incident_type_other = st.text_area(
                 "If Other, please specify",
-                key="incident_type_other",
-                value=st.session_state.get("incident_type_other", "")
+                key="incident_type_other"
             )
 
             col8, col9 = st.columns(2)
@@ -391,20 +382,17 @@ def show_incident_form():
                     "Was incident reported immediately?",
                     options=["Yes", "No"],
                     horizontal=True,
-                    key="incident_reported_immediately",
-                    index=0 if st.session_state.get("incident_reported_immediately", "Yes") == "Yes" else 1
+                    key="incident_reported_immediately"
                 )
             with col9:
                 reported_to_dispatcher = st.text_input(
                     "Reported to Dispatcher (Name)",
-                    key="incident_reported_to_dispatcher",
-                    value=st.session_state.get("incident_reported_to_dispatcher", "")
+                    key="incident_reported_to_dispatcher"
                 )
 
             reason_for_non_immediate_report = st.text_area(
                 "I did not report this incident immediately because:",
-                key="incident_reason_for_non_immediate_report",
-                value=st.session_state.get("incident_reason_for_non_immediate_report", "")
+                key="incident_reason_for_non_immediate_report"
             )
 
             col10, col11 = st.columns(2)
@@ -413,70 +401,60 @@ def show_incident_form():
                     "Did an SQM respond to this Incident?",
                     options=["Yes", "No"],
                     horizontal=True,
-                    key="incident_sqm_respond_to_incident",
-                    index=0 if st.session_state.get("incident_sqm_respond_to_incident", "Yes") == "Yes" else 1
+                    key="incident_sqm_respond_to_incident"
                 )
             with col11:
                 responding_sqm = st.text_input(
                     "SQM",
-                    key="incident_responding_sqm",
-                    value=st.session_state.get("incident_responding_sqm", "")
+                    key="incident_responding_sqm"
                 )
 
             col12, col13, col14, col15 = st.columns(4)
             with col12:
                 date_incident_occurred = st.date_input(
                     "Date incident occurred",
-                    key="incident_date_incident_occurred",
-                    value=st.session_state.get("incident_date_incident_occurred", datetime.date.today())
+                    key="incident_date_incident_occurred"
                 )
                 date_incident_reported = st.date_input(
                     "Date incident reported",
-                    key="incident_date_incident_reported",
-                    value=st.session_state.get("incident_date_incident_reported", datetime.date.today())
+                    key="incident_date_incident_reported"
                 )
             with col13:
                 time_incident_occurred = st.text_input(
                     "Time incident occurred",
-                    key="incident_time_incident_occurred",
-                    value=st.session_state.get("incident_time_incident_occurred", "")
+                    key="incident_time_incident_occurred"
                 )
                 time_incident_reported = st.text_input(
                     "Time incident reported",
-                    key="incident_time_incident_reported",
-                    value=st.session_state.get("incident_time_incident_reported", "")
+                    key="incident_time_incident_reported"
                 )
             with col14:
                 am_pm2 = st.radio(
                     "AM/PM",
                     options=["AM", "PM"],
                     horizontal=True,
-                    key="incident_am_pm2",
-                    index=0 if st.session_state.get("incident_am_pm2", "AM") == "AM" else 1
+                    key="incident_am_pm2"
                 )
                 am_pm3 = st.radio(
                     "AM/PM",
                     options=["AM", "PM"],
                     horizontal=True,
-                    key="incident_am_pm3",
-                    index=0 if st.session_state.get("incident_am_pm3", "AM") == "AM" else 1
+                    key="incident_am_pm3"
                 )
             with col15:
                 no_actual_date_and_time = st.checkbox(
                     "Do not have actual date and time.",
-                    value=st.session_state.get("incident_no_actual_date_and_time", False),
                     key="incident_no_actual_date_and_time"
                 )
                 late_report = st.checkbox(
                     "This is a late report.",
-                    value=st.session_state.get("incident_late_report", False),
                     key="incident_late_report"
                 )
 
+            highlight_missing_field("incident_location", "incident")
             incident_location = st.text_input(
                 "Location of incident",
-                key="incident_location",
-                value=st.session_state.get("incident_location", "")
+                key="incident_location"
             )
 
             st.write("Complete a separate incident report for each passenger affected by this incident.")
@@ -484,22 +462,19 @@ def show_incident_form():
             with col16:
                 passenger_name = st.text_input(
                     "Passenger Name",
-                    key="incident_passenger_name",
-                    value=st.session_state.get("incident_passenger_name", "")
+                    key="incident_passenger_name"
                 )
             with col17:
                 passenger_id = st.text_input(
                     "Passenger ID/Seat #",
-                    key="incident_passenger_id",
-                    value=st.session_state.get("incident_passenger_id", "")
+                    key="incident_passenger_id"
                 )
 
+            highlight_missing_field("explanation_of_incident", "incident")
             explanation_of_incident = st.text_area(
                 "Explain what happened",
-                key="explanation_of_incident",
-                value=st.session_state.get("explanation_of_incident", "")
+                key="explanation_of_incident"
             )
-
             st.write("Operator Signature below:")
             operator_signature = st_canvas(
                 fill_color="rgba(255, 165, 0, 0.3)",
@@ -512,10 +487,10 @@ def show_incident_form():
                 key="incident_operator_signature",
             )
 
+            highlight_missing_field("incident_signed_sqm_name", "incident")
             signed_sqm_name = st.text_input(
                 "Signing SQM Name",
-                key="incident_signed_sqm_name",
-                value=st.session_state.get("incident_signed_sqm_name", "")
+                key="incident_signed_sqm_name"
             )
 
             st.write("Supervisor Signature below:")
@@ -532,8 +507,7 @@ def show_incident_form():
 
             date_submitted = st.date_input(
                 "Date Submitted",
-                key="incident_date_submitted",
-                value=st.session_state.get("incident_date_submitted", datetime.date.today())
+                key="incident_date_submitted"
             )
 
             submitted = st.form_submit_button("Submit Incident Report")
@@ -711,18 +685,26 @@ def show_pay_exception_form():
         with st.form(key=f"pay_exception_form_{st.session_state['form_key']}"):
             col1, col2 = st.columns(2)
             with col1:
-                date = st.date_input("Date", value=datetime.date.today(), key="pay_date")
+                date = st.date_input("Date", key="pay_date")
+                highlight_missing_field("pay_name", "pay_exception")
                 name = st.text_input("Name", key="pay_name")
+                highlight_missing_field("pay_run", "pay_exception")
                 run = st.text_input("Run #", key="pay_run")
             with col2:
+                highlight_missing_field("pay_bus_number", "pay_exception")
                 bus_number = st.text_input("Bus #", key="pay_bus_number")
+                highlight_missing_field("pay_id_number", "pay_exception")
                 id_number = st.text_input("ID #", key="pay_id_number")
+                highlight_missing_field("pay_route", "pay_exception")
                 route = st.text_input("Route #", key="pay_route")
 
             col3, col4, col5, col6 = st.columns(4)
             with col3:
                 clock_in = st.text_input("Clock In", key="pay_clock_in")
-                clock_in_before = st.text_input("Scheduled Clock In (Only fill out if Operator is asked to report before)", key="pay_scheduled_clock_in")
+                clock_in_before = st.text_input(
+                    "Scheduled Clock In (Only fill out if Operator is asked to report before)",
+                    key="pay_scheduled_clock_in"
+                )
             with col4:
                 am_pm1 = st.radio("AM/PM", options=["AM", "PM"], horizontal=True, key="pay_am_pm1")
                 am_pm2 = st.radio("AM/PM", options=["AM", "PM"], horizontal=True, key="pay_am_pm2")
@@ -755,6 +737,7 @@ def show_pay_exception_form():
             with col11:
                 am_pm5 = st.radio("AM/PM", options=["AM", "PM"], horizontal=True, key="pay_am_pm5")
                 
+            highlight_missing_field("pay_explanation", "pay_exception")
             pay_explanation = st.text_area("Explanation(Must be filled in.)", key="pay_explanation", height=150)
             
             st.write("Operator Signature below:")
@@ -769,7 +752,7 @@ def show_pay_exception_form():
                 key="pay_operator_signature",
             )
 
-            pay_operator_signature_date = st.date_input("Date", value=datetime.date.today(), key="pay_operator_signature_date")
+            pay_operator_signature_date = st.date_input("Date", key="pay_operator_signature_date")
 
             st.write("Supervisor Signature below:")
             pay_supervisor_signature = st_canvas(
@@ -783,36 +766,39 @@ def show_pay_exception_form():
                 key="pay_supervisor_signature",
             )
             
+            highlight_missing_field("pay_signing_sqm_name", "pay_exception")
             pay_supervisor_signature_name = st.text_input("Signing SQM Name", key="pay_signing_sqm_name")
-            pay_supervisor_signature_date = st.date_input("Date", value=datetime.date.today(), key="pay_supervisor_signature_date")        
+            pay_supervisor_signature_date = st.date_input("Date", key="pay_supervisor_signature_date")
             
             submitted = st.form_submit_button("Submit Pay Exception Form")
             
             if submitted:
                 # st.write("DEBUG: Pay Exception form submitted.")
                 pay_required_fields = {
-                    "Date": date,
-                    "Name": name,
-                    "Run #": run,
-                    "Bus #": bus_number,
-                    "ID #": id_number,
-                    "Route #": route,
-                    "Operator Signature Date": pay_operator_signature_date,
-                    "Signing SQM Name": pay_supervisor_signature_name,
-                    "Supervisor Signature Date": pay_supervisor_signature_date,
+                    "pay_date": ("Date", date),
+                    "pay_name": ("Name", name),
+                    "pay_run": ("Run #", run),
+                    "pay_bus_number": ("Bus #", bus_number),
+                    "pay_id_number": ("ID #", id_number),
+                    "pay_route": ("Route #", route),
+                    "pay_explanation": ("Explanation", pay_explanation),
+                    "pay_operator_signature_date": ("Operator Signature Date", pay_operator_signature_date),
+                    "pay_signing_sqm_name": ("Signing SQM Name", pay_supervisor_signature_name),
+                    "pay_supervisor_signature_date": ("Supervisor Signature Date", pay_supervisor_signature_date),
                 }
                 
-                missing = [label for label, value in pay_required_fields.items() if not value]
-                # st.write("DEBUG: Missing required fields:", missing)
-                if missing:
-                    st.error(f"Please fill in all required fields: {', '.join(missing)}")
-                elif not pay_explanation:
-                    st.error("The 'Explanation (Must be filled in.)' field is required.")
+                missing_fields = {key: label for key, (label, value) in pay_required_fields.items() if not value}
+
+                if missing_fields:
+                    st.session_state['missing_pay_exception_fields'] = list(missing_fields.keys())
+                    st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
+                    st.rerun()
                 elif not is_signature_present(pay_operator_signature.image_data):
                     st.error("Operator signature is required.")
                 elif not is_signature_present(pay_supervisor_signature.image_data):
                     st.error("Supervisor signature is required.")
                 else:
+                    st.session_state['missing_pay_exception_fields'] = []
                     pay_form_data = {
                         "date": date,
                         "name": name,
@@ -849,7 +835,7 @@ def show_pay_exception_form():
                         "clock_in_before","am_pm2", "clock_out", "am_pm3", "actual_clock_out",  "am_pm4", 
                         "weather", "extra_work", "traffic_delay", "incident_report", "bus_exchange", "missed_meal", 
                         "road_call", "traffic_location", "time_reported_to_command", "am_pm5", "pay_explanation",
-                        "pay_operator_signature_date", "pay_signing_sqm_name""pay_supervisor_signature_date",
+                        "pay_operator_signature_date", "pay_signing_sqm_name", "pay_supervisor_signature_date",
                     ]
                     # st.write("DEBUG: pay_columns:", pay_columns)
                     try:
