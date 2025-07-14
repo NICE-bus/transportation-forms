@@ -68,20 +68,29 @@ def save_to_gsheet(data, worksheet_name, columns):
 def process_signature_img(signature_canvas):
     if signature_canvas is None or signature_canvas.image_data is None:
         return None
+    
+    # This is a more robust method that rebuilds the signature from the alpha channel.
+    # It ensures the stroke is black, regardless of the canvas's stroke/background color settings.
+    image_data = signature_canvas.image_data
 
-    # The canvas returns a numpy array of uint8 values (0-255) with shape (height, width, 4)
-    # The multiplication by 255 is no longer needed and was causing the issue.
-    if signature_canvas.image_data.dtype != np.uint8:
-        # Ensure data is in the correct format if it's not already
-        signature_canvas.image_data = signature_canvas.image_data.astype(np.uint8)
+    # We only care about the alpha channel as the mask.
+    # The alpha channel is the 4th channel in the (height, width, 4) array.
+    alpha_channel = image_data[:, :, 3]
 
-    signature_img = Image.fromarray(signature_canvas.image_data, mode="RGBA")
+    # Create a new all-white RGB image.
+    height, width = alpha_channel.shape
+    signature_img = Image.new("RGB", (width, height), "white")
 
-    # Create a white RGBA background
-    white_bg = Image.new("RGBA", signature_img.size, "WHITE")
-    # Paste signature over white background using itself as mask
-    white_bg.paste(signature_img, (0, 0), signature_img)
-    return white_bg.convert("RGB")
+    # Create a mask from the alpha channel. This tells us where the user has drawn.
+    mask = Image.fromarray(alpha_channel, mode="L")
+
+    # Create a solid black image to be used for the strokes.
+    black_ink = Image.new("RGB", (width, height), "black")
+
+    # Paste the black ink onto our white canvas, but only where the mask is non-zero.
+    signature_img.paste(black_ink, (0, 0), mask)
+
+    return signature_img
 
 def _draw_signature_on_pdf(c, y_pos, signature_label, signature_canvas_data):
     """Helper to draw a signature block on the PDF canvas."""
