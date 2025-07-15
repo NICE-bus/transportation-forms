@@ -31,7 +31,7 @@ def display_submit_button_error(form_type, message):
     """Displays a styled message above the submit button for a specific form."""
     session_key = f"submit_error_{form_type}"
     if st.session_state.get(session_key):
-        st.markdown(f''':red[{message}]''')
+        st.markdown(f''':red-background[{message}]''')
 
 # Helper Functions
 
@@ -516,7 +516,8 @@ def show_incident_form():
                 key="incident_date_submitted"
             )
             
-            display_submit_button_error("incident", "Please correct the errors above before submitting.")
+            display_submit_button_error("incident", "Please fill in the required fields above.")
+            
             submitted = st.form_submit_button("Submit Incident Report")
             if submitted:
                 # st.write("DEBUG: Incident form submitted.")
