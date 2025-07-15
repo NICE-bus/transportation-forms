@@ -24,6 +24,7 @@ st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 def highlight_missing_field(field_key, form_type):
     """Displays a 'required' message if the field is marked as missing in session_state."""
     session_key = f"missing_{form_type}_fields"
+    st.write(f"DEBUG: Checking for missing fields in session_state[{session_key}]:", st.session_state.get(session_key, []))
     if field_key in st.session_state.get(session_key, []):
         st.markdown(''':red[This field is required] :arrow_down:''', unsafe_allow_html=True)
 
