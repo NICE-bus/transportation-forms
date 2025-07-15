@@ -25,7 +25,8 @@ def highlight_missing_field(field_key, form_type):
     """Displays a 'required' message if the field is marked as missing in session_state."""
     session_key = f"missing_{form_type}_fields"
     if field_key in st.session_state.get(session_key, []):
-        st.markdown(''':red[This field is required] :arrow_down:''', unsafe_allow_html=True)
+        # Use st.error and the provided message for a persistent, styled display.
+        st.error(message)
 
 # Helper Functions
 
@@ -289,6 +290,11 @@ def show_incident_form():
         st.session_state["page"] = "home"
         st.session_state["incident_submitted"] = False
         st.rerun()
+
+    # No longer displaying a general error message here.
+    # The error messages will now be handled individually by the highlight function.
+
+    
     if not st.session_state.get("incident_submitted", False):
         # st.write("DEBUG: Incident form is visible.")
         
@@ -301,7 +307,7 @@ def show_incident_form():
                 )
             with col2:
                 highlight_missing_field("incident_time", "incident")
-                time = st.text_input(
+                time = st.text_input( 
                     "Time",
                     key="incident_time"
                 )
@@ -314,7 +320,7 @@ def show_incident_form():
                 )
             with col4:
                 highlight_missing_field("incident_brief", "incident")
-                brief = st.text_input(
+                brief = st.text_input( 
                     "Brief #",
                     key="incident_brief"
                 )
@@ -323,17 +329,17 @@ def show_incident_form():
             with col5:
                 highlight_missing_field("incident_operator_name", "incident")
                 operator_name = st.text_input(
-                    "Operator Name",
+                    "Operator Name", 
                     key="incident_operator_name"
                 )
                 highlight_missing_field("incident_vehicle", "incident")
                 vehicle = st.text_input(
-                    "Vehicle #",
+                    "Vehicle #", 
                     key="incident_vehicle"
                 )
             with col6:
                 highlight_missing_field("incident_operator_id", "incident")
-                operator_id = st.text_input(
+                operator_id = st.text_input( 
                     "Operator ID",
                     key="incident_operator_id"
                 )
@@ -533,10 +539,11 @@ def show_incident_form():
 
                 if missing_fields:
                     # Store the keys of missing fields in session state
-                    st.session_state['missing_incident_fields'] = list(missing_fields.keys())
-                    # Display a general error message with the labels of missing fields
-                    st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
-                    st.rerun() # Rerun the app to display the highlights
+                    st.session_state['missing_incident_fields'] = []  # Clear previous errors.
+                    for key, label in missing_fields.items():
+                        st.session_state['missing_incident_fields'].append(key)
+                        highlight_missing_field(key, "incident", f"Please fill in all required fields: {label}")
+                    st.rerun() # Rerun the app to display the highlights and individual error messages
                 elif not is_signature_present(operator_signature.image_data):
                     st.error("Operator signature is required.")
                 elif not is_signature_present(supervisor_signature.image_data):
@@ -677,7 +684,7 @@ def show_pay_exception_form():
     if st.button("Return Home", key="pay_exception_return_top"):
         # st.write("DEBUG: Pay Exception Return Home button pressed.")
         st.session_state["page"] = "home"
-        st.session_state["page"] = "home"
+        st.session_state["pay_exception_submitted"] = False
         st.rerun()
     if not st.session_state.get("pay_exception_submitted", False):
         # st.write("DEBUG: Pay Exception form is visible.")
@@ -791,8 +798,7 @@ def show_pay_exception_form():
 
                 if missing_fields:
                     st.session_state['missing_pay_exception_fields'] = list(missing_fields.keys())
-                    for key, label in missing_fields.items():
-                        highlight_missing_field(key, "pay_exception", f"Please fill in all required fields: {label}")
+                    st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
                     # st.rerun()
                 elif not is_signature_present(pay_operator_signature.image_data):
                     st.error("Operator signature is required.")
