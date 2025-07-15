@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_drawable_canvas import st_canvas
 import pandas as pd
 import datetime
 import io
@@ -6,7 +7,6 @@ from PIL import Image, ImageOps
 import gspread
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas as pdf_canvas
-from streamlit_drawable_canvas import st_canvas
 from reportlab.lib.utils import ImageReader, simpleSplit
 import numpy as np
 import yagmail
@@ -25,7 +25,7 @@ def highlight_missing_field(field_key, form_type):
     """Displays a 'required' message if the field is marked as missing in session_state."""
     session_key = f"missing_{form_type}_fields"
     if field_key in st.session_state.get(session_key, []):
-        st.markdown("':red[This field is required]'", unsafe_allow_html=True)
+        st.markdown(''':red[This field is required] :arrow_down:''', unsafe_allow_html=True)
 
 # Helper Functions
 
@@ -106,7 +106,7 @@ def process_signature_img(signature_canvas):
 def save_submission_pdf(data, field_list, pdf_title, filename, operator_signature_img=None, supervisor_signature_img=None):
     # st.write("DEBUG: Generating PDF:", filename)
     c = pdf_canvas.Canvas(filename, pagesize=letter)
-    width, height = letter   
+    width, height = letter
 
     # --- Title ---
     c.setFont("Helvetica-Bold", 20)
@@ -287,7 +287,7 @@ def show_incident_form():
     if st.button("Return Home", key="incident_return_top"):
         # st.write("DEBUG: Return Home button pressed.")
         st.session_state["page"] = "home"
-        st.session_state["page"] = "home"
+        st.session_state["incident_submitted"] = False
         st.rerun()
     if not st.session_state.get("incident_submitted", False):
         # st.write("DEBUG: Incident form is visible.")
@@ -535,8 +535,8 @@ def show_incident_form():
                     # Store the keys of missing fields in session state
                     st.session_state['missing_incident_fields'] = list(missing_fields.keys())
                     # Display a general error message with the labels of missing fields
-                    st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
-                    # st.rerun() # Rerun the app to display the highlights
+                    st.rerun() # Rerun the app to display the highlights
+                    st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")                    
                 elif not is_signature_present(operator_signature.image_data):
                     st.error("Operator signature is required.")
                 elif not is_signature_present(supervisor_signature.image_data):
@@ -646,6 +646,7 @@ def show_incident_form():
                     st.session_state["incident_form_data"] = incident_form_data
                     st.session_state["incident_submitted"] = True
                     # st.write("DEBUG: Setting incident_submitted to True and rerunning.")
+                    st.rerun()
             
         # Clear button (inside form, but outside submit logic)
         if st.button("Clear", key="incident_clear_bottom"):
