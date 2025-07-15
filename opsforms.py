@@ -27,6 +27,12 @@ def highlight_missing_field(field_key, form_type):
     if field_key in st.session_state.get(session_key, []):
         st.markdown(''':red[This field is required] :arrow_down:''', unsafe_allow_html=True)
 
+def display_submit_button_error(form_type, message):
+    """Displays a styled message above the submit button for a specific form."""
+    session_key = f"submit_error_{form_type}"
+    if st.session_state.get(session_key):
+        st.markdown(f''':red[{message}]''')
+
 # Helper Functions
 
 def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None):
@@ -509,7 +515,8 @@ def show_incident_form():
                 "Date Submitted",
                 key="incident_date_submitted"
             )
-
+            
+            display_submit_button_error("incident", "Please correct the errors above before submitting.")
             submitted = st.form_submit_button("Submit Incident Report")
             if submitted:
                 # st.write("DEBUG: Incident form submitted.")
@@ -535,9 +542,9 @@ def show_incident_form():
                     # Store the keys of missing fields in session state
                     st.session_state['missing_incident_fields'] = list(missing_fields.keys())
                     # Display a general error message with the labels of missing fields
-                    #st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
+                    # st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
+                    st.session_state['submit_error_incident'] = f"Please fill in all required fields: {', '.join(missing_fields.values())}"
                     st.rerun() # Rerun the app to display the highlights
-                    st.markdown(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
                 elif not is_signature_present(operator_signature.image_data):
                     st.error("Operator signature is required.")
                 elif not is_signature_present(supervisor_signature.image_data):
@@ -545,6 +552,7 @@ def show_incident_form():
                 else:
                     # On successful validation, clear any previous missing field flags
                     st.session_state['missing_incident_fields'] = []
+                    st.session_state['submit_error_incident'] = ""
                     incident_form_data = {
                         "date": date,
                         "time": time,
