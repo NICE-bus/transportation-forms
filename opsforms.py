@@ -535,8 +535,8 @@ def show_incident_form():
                     # Store the keys of missing fields in session state
                     st.session_state['missing_incident_fields'] = list(missing_fields.keys())
                     # Display a general error message with the labels of missing fields
+                    st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
                     st.rerun() # Rerun the app to display the highlights
-                    st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")                    
                 elif not is_signature_present(operator_signature.image_data):
                     st.error("Operator signature is required.")
                 elif not is_signature_present(supervisor_signature.image_data):
@@ -677,7 +677,7 @@ def show_pay_exception_form():
     if st.button("Return Home", key="pay_exception_return_top"):
         # st.write("DEBUG: Pay Exception Return Home button pressed.")
         st.session_state["page"] = "home"
-        st.session_state["pay_exception_submitted"] = False
+        st.session_state["page"] = "home"
         st.rerun()
     if not st.session_state.get("pay_exception_submitted", False):
         # st.write("DEBUG: Pay Exception form is visible.")
@@ -791,7 +791,8 @@ def show_pay_exception_form():
 
                 if missing_fields:
                     st.session_state['missing_pay_exception_fields'] = list(missing_fields.keys())
-                    st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
+                    for key, label in missing_fields.items():
+                        highlight_missing_field(key, "pay_exception", f"Please fill in all required fields: {label}")
                     # st.rerun()
                 elif not is_signature_present(pay_operator_signature.image_data):
                     st.error("Operator signature is required.")
