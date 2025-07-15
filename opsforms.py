@@ -289,7 +289,7 @@ def show_incident_form():
         st.session_state["page"] = "home"
         st.session_state["incident_submitted"] = False
         st.rerun()
-    if not st.session_state.get("incident_submitted", False) and not st.session_state.get('missing_incident_fields'):
+    if not st.session_state.get("incident_submitted", False):
         # st.write("DEBUG: Incident form is visible.")
         
         with st.form(key=f"incident_form_{st.session_state['form_key']}"):
@@ -533,8 +533,10 @@ def show_incident_form():
 
                 if missing_fields:
                     # Store the keys of missing fields in session state
-                    st.session_state['missing_incident_fields'] = list(missing_fields.keys())                   
-                    # st.rerun() # Rerun the app to display the highlights
+                    st.session_state['missing_incident_fields'] = list(missing_fields.keys())
+                    # Display a general error message with the labels of missing fields
+                    st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
+                    st.rerun() # Rerun the app to display the highlights
                 elif not is_signature_present(operator_signature.image_data):
                     st.error("Operator signature is required.")
                 elif not is_signature_present(supervisor_signature.image_data):
