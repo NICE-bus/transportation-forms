@@ -25,7 +25,7 @@ def highlight_missing_field(field_key, form_type):
     """Displays a 'required' message if the field is marked as missing in session_state."""
     session_key = f"missing_{form_type}_fields"
     if field_key in st.session_state.get(session_key, []):
-        st.markdown(''':red[This field is required] :arrow_down:''', unsafe_allow_html=True)
+        st.markdown(''':red-background[This field is required] :arrow_down:''', unsafe_allow_html=True)
 
 def display_submit_button_error(form_type, message):
     """Displays a styled message above the submit button for a specific form."""
