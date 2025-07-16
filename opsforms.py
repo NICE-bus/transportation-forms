@@ -483,7 +483,7 @@ def show_incident_form():
             )
             st.write("Operator Signature below:")
             if st.session_state.get("signature_error_operator"):
-                st.caption("Please provide a signature")
+                st.markdown(":red-background[OPERATOR SIGNATURE IS REQUIRED.]:arrow_down:")
             operator_signature = st_canvas(
                 fill_color="rgba(255, 165, 0, 0.3)",
                 stroke_width=2,
@@ -550,7 +550,7 @@ def show_incident_form():
                     st.rerun() # Rerun the app to display the highlights
                 elif is_signature_present(operator_signature.image_data):
                     # st.error("Operator signature is required.")
-                    st.markdown(":red-background[OPERATOR SIGNATURE IS REQUIRED.]:arrow_down:")
+                    # st.markdown(":red-background[OPERATOR SIGNATURE IS REQUIRED.]:arrow_down:")
                     # Here, also add the key of the error to the session state for the conditional display to pick up on.
                     # To show the marker below a specific canvas, use the format: f"signature_error_{name}"
                     st.session_state["signature_error_operator"] = True
