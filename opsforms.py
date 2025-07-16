@@ -789,33 +789,39 @@ def show_pay_exception_form():
             pay_supervisor_signature_name = st.text_input("Signing SQM Name", key="pay_signing_sqm_name")
             pay_supervisor_signature_date = st.date_input("Date", key="pay_supervisor_signature_date")
             
+            # st.write("DEBUG: Pay Exception form submitted.")
+            pay_required_fields = {
+                "pay_date": ("Date", date),
+                "pay_name": ("Name", name),
+                "pay_run": ("Run #", run),
+                "pay_bus_number": ("Bus #", bus_number),
+                "pay_id_number": ("ID #", id_number),
+                "pay_route": ("Route #", route),
+                "pay_explanation": ("Explanation", pay_explanation),
+                "pay_operator_signature_date": ("Operator Signature Date", pay_operator_signature_date),
+                "pay_signing_sqm_name": ("Signing SQM Name", pay_supervisor_signature_name),
+                "pay_supervisor_signature_date": ("Supervisor Signature Date", pay_supervisor_signature_date),
+                "pay_operator_signature": ("Operator Signature", pay_operator_signature),
+                "pay_supervisor_signature": ("Supervisor Signature", pay_supervisor_signature),
+            }
+            
+            display_submit_button_error("pay_exception", pay_required_fields)
+            
             submitted = st.form_submit_button("Submit Pay Exception Form")
             
-            if submitted:
-                # st.write("DEBUG: Pay Exception form submitted.")
-                pay_required_fields = {
-                    "pay_date": ("Date", date),
-                    "pay_name": ("Name", name),
-                    "pay_run": ("Run #", run),
-                    "pay_bus_number": ("Bus #", bus_number),
-                    "pay_id_number": ("ID #", id_number),
-                    "pay_route": ("Route #", route),
-                    "pay_explanation": ("Explanation", pay_explanation),
-                    "pay_operator_signature_date": ("Operator Signature Date", pay_operator_signature_date),
-                    "pay_signing_sqm_name": ("Signing SQM Name", pay_supervisor_signature_name),
-                    "pay_supervisor_signature_date": ("Supervisor Signature Date", pay_supervisor_signature_date),
+            if submitted:                
+                missing_fields = {
+                    key: label for key, (label, value) in pay_required_fields.items()
+                    if (
+                        (key == "pay_operator_signature" and not is_signature_present(value.image_data)) or
+                        (key == "pay_supervisor_signature" and not is_signature_present(value.image_data)) or
+                        (key not in ["pay_operator_signature", "pay_supervisor_signature"] and not value)
+                    )
                 }
-                
-                missing_fields = {key: label for key, (label, value) in pay_required_fields.items() if not value}
 
                 if missing_fields:
                     st.session_state['missing_pay_exception_fields'] = list(missing_fields.keys())
-                    st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
-                    # st.rerun()
-                elif not is_signature_present(pay_operator_signature.image_data):
-                    st.error("Operator signature is required.")
-                elif not is_signature_present(pay_supervisor_signature.image_data):
-                    st.error("Supervisor signature is required.")
+                    st.rerun()
                 else:
                     st.session_state['missing_pay_exception_fields'] = []
                     pay_form_data = {
