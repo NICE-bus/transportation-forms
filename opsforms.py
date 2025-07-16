@@ -295,20 +295,6 @@ if "page" not in st.session_state:
 def show_incident_form():
     st.title("Operator Incident Report")
     # st.write("DEBUG: show_incident_form called.")
-        # Map widget keys to their labels and values for validation
-    incident_required_fields = {
-        "incident_time": ("Time", time),
-        "incident_brief": ("Brief #", brief),
-        "incident_operator_name": ("Operator Name", operator_name),
-        "incident_vehicle": ("Vehicle #", vehicle),
-        "incident_operator_id": ("Operator ID", operator_id),
-        "incident_route": ("Route #", route),
-        "incident_depot": ("Depot", depot),
-        "incident_run": ("Run #", run),
-        "incident_location": ("Location of incident", incident_location),
-        "explanation_of_incident": ("Explain what happened", explanation_of_incident),
-        "incident_signed_sqm_name": ("Signed SQM Name", signed_sqm_name),
-    }
     if st.button("Return Home", key="incident_return_top"):
         # st.write("DEBUG: Return Home button pressed.")
         st.session_state["page"] = "home"
@@ -534,6 +520,22 @@ def show_incident_form():
                 "Date Submitted",
                 key="incident_date_submitted"
             )
+            
+        incident_required_fields = {
+            "incident_time": ("Time", time),
+            "incident_brief": ("Brief #", brief),
+            "incident_operator_name": ("Operator Name", operator_name),
+            "incident_vehicle": ("Vehicle #", vehicle),
+            "incident_operator_id": ("Operator ID", operator_id),
+            "incident_route": ("Route #", route),
+            "incident_depot": ("Depot", depot),
+            "incident_run": ("Run #", run),
+            "incident_location": ("Location of incident", incident_location),
+            "explanation_of_incident": ("Explain what happened", explanation_of_incident),
+            "incident_signed_sqm_name": ("Signed SQM Name", signed_sqm_name),
+        }
+            
+            
             
             display_submit_button_error("incident", incident_required_fields)
             
