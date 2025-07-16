@@ -483,7 +483,7 @@ def show_incident_form():
             )
             st.write("Operator Signature below:")
             if st.session_state.get("signature_error_operator"):
-            st.caption("Please provide a signature")
+                st.caption("Please provide a signature")
             operator_signature = st_canvas(
                 fill_color="rgba(255, 165, 0, 0.3)",
                 stroke_width=2,
