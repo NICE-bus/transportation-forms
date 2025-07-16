@@ -535,8 +535,8 @@ def show_incident_form():
                 "incident_location": ("Location of incident", incident_location),
                 "explanation_of_incident": ("Explain what happened", explanation_of_incident),
                 "incident_signed_sqm_name": ("Signed SQM Name", signed_sqm_name),
-                "operator_signature": ("Operator Signature", None),
-                "supervisor_signature": ("Supervisor Signature", None),
+                "operator_signature": ("Operator Signature", operator_signature),
+                "supervisor_signature": ("Supervisor Signature", supervisor_signature),
             }
             
             
