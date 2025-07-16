@@ -521,19 +521,19 @@ def show_incident_form():
                 key="incident_date_submitted"
             )
             
-        incident_required_fields = {
-            "incident_time": ("Time", time),
-            "incident_brief": ("Brief #", brief),
-            "incident_operator_name": ("Operator Name", operator_name),
-            "incident_vehicle": ("Vehicle #", vehicle),
-            "incident_operator_id": ("Operator ID", operator_id),
-            "incident_route": ("Route #", route),
-            "incident_depot": ("Depot", depot),
-            "incident_run": ("Run #", run),
-            "incident_location": ("Location of incident", incident_location),
-            "explanation_of_incident": ("Explain what happened", explanation_of_incident),
-            "incident_signed_sqm_name": ("Signed SQM Name", signed_sqm_name),
-        }
+            incident_required_fields = {
+                "incident_time": ("Time", time),
+                "incident_brief": ("Brief #", brief),
+                "incident_operator_name": ("Operator Name", operator_name),
+                "incident_vehicle": ("Vehicle #", vehicle),
+                "incident_operator_id": ("Operator ID", operator_id),
+                "incident_route": ("Route #", route),
+                "incident_depot": ("Depot", depot),
+                "incident_run": ("Run #", run),
+                "incident_location": ("Location of incident", incident_location),
+                "explanation_of_incident": ("Explain what happened", explanation_of_incident),
+                "incident_signed_sqm_name": ("Signed SQM Name", signed_sqm_name),
+            }
             
             
             
