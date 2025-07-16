@@ -27,11 +27,16 @@ def highlight_missing_field(field_key, form_type):
     if field_key in st.session_state.get(session_key, []):
         st.markdown(''':red-background[THIS FIELD IS REQUIRED] :arrow_down:''', unsafe_allow_html=True)
 
-def display_submit_button_error(form_type, message):
-    """Displays a styled message above the submit button for a specific form."""
-    session_key = f"submit_error_{form_type}"
-    if st.session_state.get(session_key):
-        st.markdown(f''':red-background[{message}]''')
+def display_submit_button_error(form_type, required_fields):
+    """Displays a styled message above the submit button for a specific form, listing missing fields."""
+    session_key = f"missing_{form_type}_fields"
+    missing_keys = st.session_state.get(session_key, [])
+    if missing_keys:
+        missing_labels = [required_fields[key][0] for key in missing_keys if key in required_fields]
+        st.markdown(
+            f''':red-background[Please fill in all required fields: {", ".join(missing_labels)}]''',
+            unsafe_allow_html=True
+        )
 
 # Helper Functions
 
@@ -516,7 +521,7 @@ def show_incident_form():
                 key="incident_date_submitted"
             )
             
-            display_submit_button_error("incident", "PLEASE FILL IN THE REQUIRED FIELDS ABOVE.")
+            display_submit_button_error("incident", incident_required_fields)
             
             submitted = st.form_submit_button("Submit Incident Report")
             if submitted:
