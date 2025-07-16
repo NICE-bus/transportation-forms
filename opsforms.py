@@ -549,7 +549,7 @@ def show_incident_form():
                     st.session_state['missing_incident_fields'] = list(missing_fields.keys())
                     # Display a general error message with the labels of missing fields
                     # st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
-                    st.session_state['submit_error_incident'] = f"Please fill in all required fields: {', '.join(missing_fields.values())}"
+                    # st.session_state['submit_error_incident'] = f"Please fill in all required fields: {', '.join(missing_fields.values())}"
                     st.rerun() # Rerun the app to display the highlights
                 elif not is_signature_present(operator_signature.image_data):
                     st.error("Operator signature is required.")
