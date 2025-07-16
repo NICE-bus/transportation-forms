@@ -546,8 +546,8 @@ def show_incident_form():
                     # st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
                     st.session_state['submit_error_incident'] = f"Please fill in all required fields: {', '.join(missing_fields.values())}"
                     st.rerun() # Rerun the app to display the highlights
-                elif is_signature_present(operator_signature.image_data):
-                    st.error("Operator signature is required.")
+                elif is_signature_present(operator_signature.image_data) or is_signature_present(supervisor_signature.image_data):
+                    st.error("Signature required.")
                 elif not is_signature_present(supervisor_signature.image_data):
                     st.error("Supervisor signature is required.")
                 else:
