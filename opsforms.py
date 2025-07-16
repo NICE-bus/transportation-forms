@@ -546,130 +546,126 @@ def show_incident_form():
             submitted = st.form_submit_button("Submit Incident Report")
             if submitted:
 
-                # Check for missing required fields
-                # After submitted = st.form_submit_button("Submit Incident Report")
-                if submitted:
-                    # Build missing fields dictionary, including signatures
-                    missing_fields = {
-                        key: label for key, (label, value) in incident_required_fields.items()
-                        if (
-                            (key == "operator_signature" and not is_signature_present(operator_signature.image_data)) or
-                            (key == "supervisor_signature" and not is_signature_present(supervisor_signature.image_data)) or
-                            (key not in ["operator_signature", "supervisor_signature"] and not value)
-                        )
-                    }
+                missing_fields = {
+                    key: label for key, (label, value) in incident_required_fields.items()
+                    if (
+                        (key == "operator_signature" and not is_signature_present(value.operator_signature.image_data)) or
+                        (key == "supervisor_signature" and not is_signature_present(value.supervisor_signature.image_data)) or
+                        (key not in ["operator_signature", "supervisor_signature"] and not value)
+                    )
+                }
 
-                    if missing_fields:
-                        st.session_state['missing_incident_fields'] = list(missing_fields.keys())
-                        st.rerun()
-                    else:
-                        # Clear missing fields on success
-                        st.session_state['missing_incident_fields'] = []
-                        st.session_state['submit_error_incident'] = ""
-
-                    incident_form_data = {
-                        "date": date,
-                        "time": time,
-                        "am_pm1": am_pm1,
-                        "brief": brief,
-                        "operator_name": operator_name,
-                        "operator_id": operator_id,
-                        "depot": depot,
-                        "vehicle": vehicle,
-                        "route": route,
-                        "run": run,
-                        "report_submitted_to": report_submitted_to,
-                        "incident_type": incident_type,
-                        "incident_type_other": incident_type_other,
-                        "reported_immediately": reported_immediately,
-                        "reported_to_dispatcher": reported_to_dispatcher,
-                        "reason_for_non_immediate_report": reason_for_non_immediate_report,
-                        "sqm_respond_to_incident": sqm_respond_to_incident,
-                        "responding_sqm": responding_sqm,
-                        "date_incident_occurred": date_incident_occurred,
-                        "date_incident_reported": date_incident_reported,
-                        "time_incident_occurred": time_incident_occurred,
-                        "am_pm2": am_pm2,
-                        "time_incident_reported": time_incident_reported,
-                        "am_pm3": am_pm3,
-                        "no_actual_date_and_time": no_actual_date_and_time,
-                        "late_report": late_report,
-                        "incident_location": incident_location,
-                        "passenger_name": passenger_name,
-                        "passenger_id": passenger_id,
-                        "explanation_of_incident": explanation_of_incident,
-                        "signed_sqm_name": signed_sqm_name,
-                        "date_submitted": date_submitted,
-                    }
-                    # st.write("DEBUG: incident_form_data:", incident_form_data)
-
-                    incident_columns = [
-                        "date", "time", "am_pm1", "brief", "operator_name", "operator_id", "depot", "vehicle", 
-                        "route", "run", "report_submitted_to", "incident_type", "incident_type_other", 
-                        "reported_immediately", "reported_to_dispatcher", "reason_for_non_immediate_report", 
-                        "sqm_respond_to_incident", "responding_sqm", "date_incident_occurred", 
-                        "date_incident_reported", "time_incident_occurred", "am_pm2", "time_incident_reported", 
-                        "am_pm3", "no_actual_date_and_time", "late_report", "incident_location", 
-                        "passenger_name", "passenger_id", "explanation_of_incident", "signed_sqm_name", 
-                        "date_submitted"
-                    ]
-
-                    try:
-                        save_to_gsheet(incident_form_data, worksheet_name="Incident Reports", columns=incident_columns)
-                        # st.write("DEBUG: Saved incident to Google Sheet.")
-                    except Exception as e:
-                        st.error(f"Failed to save to Google Sheet: {e}")
-                        # st.write("DEBUG: Google Sheet error:", e)
-
-                    # 2. Generate PDF
-                    try:
-                        # For incident report
-                        filename = f"incident_{incident_form_data['operator_name']}_{incident_form_data['date']}_for_brief_{incident_form_data['brief']}.pdf"
-                        save_submission_pdf(
-                            incident_form_data,
-                            incident_field_list,
-                            "Operator Incident Report",
-                            filename,
-                            operator_signature_img=operator_signature,
-                            supervisor_signature_img=supervisor_signature
-                        )
-                        # st.write("DEBUG: PDF generated:", filename)
-                    except Exception as e:
-                        st.error(f"Failed to generate PDF: {e}")
-                        st.error(f"Failed to generate PDF: {e}")
-                        filename = None
-
-                    # 3. Send Email (only if PDF was created)
-                    if filename:
-                        subject = f"Incident Report: {incident_form_data['operator_name']} on {incident_form_data['date']} for Brief # {incident_form_data['brief']}"
-                        body = f"""
-                        An incident report has been submitted.
-
-                        Operator: {incident_form_data['operator_name']}
-                        Date: {incident_form_data['date']}
-                        Brief: {incident_form_data['brief']}
-                        
-                        See attached PDF for details.
-                        """
-                        try:
-                            success, error = send_pdf_email(
-                                filename,
-                                incident_form_data,
-                                subject,
-                                body,
-                                to_email=st.secrets["to_emails"],
-                                cc_emails=st.secrets["cc_emails"]
-                            )
-                            # st.write("DEBUG: Email send result:", success, error)
-                            if not success:
-                                st.error(f"Failed to send email: {error}")
-                        except Exception as e:
-                            st.error(f"Failed to send email: {e}")          
-                            # st.write("DEBUG: Email error:", e)
-                    st.session_state["incident_form_data"] = incident_form_data
-                    st.session_state["incident_submitted"] = True
-                    # st.write("DEBUG: Setting incident_submitted to True and rerunning.")
+                if missing_fields:
+                    st.session_state['missing_incident_fields'] = list(missing_fields.keys())
                     st.rerun()
+                else:
+                    # Clear missing fields on success
+                    st.session_state['missing_incident_fields'] = []
+                    st.session_state['submit_error_incident'] = ""
+
+                incident_form_data = {
+                    "date": date,
+                    "time": time,
+                    "am_pm1": am_pm1,
+                    "brief": brief,
+                    "operator_name": operator_name,
+                    "operator_id": operator_id,
+                    "depot": depot,
+                    "vehicle": vehicle,
+                    "route": route,
+                    "run": run,
+                    "report_submitted_to": report_submitted_to,
+                    "incident_type": incident_type,
+                    "incident_type_other": incident_type_other,
+                    "reported_immediately": reported_immediately,
+                    "reported_to_dispatcher": reported_to_dispatcher,
+                    "reason_for_non_immediate_report": reason_for_non_immediate_report,
+                    "sqm_respond_to_incident": sqm_respond_to_incident,
+                    "responding_sqm": responding_sqm,
+                    "date_incident_occurred": date_incident_occurred,
+                    "date_incident_reported": date_incident_reported,
+                    "time_incident_occurred": time_incident_occurred,
+                    "am_pm2": am_pm2,
+                    "time_incident_reported": time_incident_reported,
+                    "am_pm3": am_pm3,
+                    "no_actual_date_and_time": no_actual_date_and_time,
+                    "late_report": late_report,
+                    "incident_location": incident_location,
+                    "passenger_name": passenger_name,
+                    "passenger_id": passenger_id,
+                    "explanation_of_incident": explanation_of_incident,
+                    "signed_sqm_name": signed_sqm_name,
+                    "date_submitted": date_submitted,
+                }
+                # st.write("DEBUG: incident_form_data:", incident_form_data)
+
+                incident_columns = [
+                    "date", "time", "am_pm1", "brief", "operator_name", "operator_id", "depot", "vehicle", 
+                    "route", "run", "report_submitted_to", "incident_type", "incident_type_other", 
+                    "reported_immediately", "reported_to_dispatcher", "reason_for_non_immediate_report", 
+                    "sqm_respond_to_incident", "responding_sqm", "date_incident_occurred", 
+                    "date_incident_reported", "time_incident_occurred", "am_pm2", "time_incident_reported", 
+                    "am_pm3", "no_actual_date_and_time", "late_report", "incident_location", 
+                    "passenger_name", "passenger_id", "explanation_of_incident", "signed_sqm_name", 
+                    "date_submitted"
+                ]
+
+                try:
+                    save_to_gsheet(incident_form_data, worksheet_name="Incident Reports", columns=incident_columns)
+                    # st.write("DEBUG: Saved incident to Google Sheet.")
+                except Exception as e:
+                    st.error(f"Failed to save to Google Sheet: {e}")
+                    # st.write("DEBUG: Google Sheet error:", e)
+
+                # 2. Generate PDF
+                try:
+                    # For incident report
+                    filename = f"incident_{incident_form_data['operator_name']}_{incident_form_data['date']}_for_brief_{incident_form_data['brief']}.pdf"
+                    save_submission_pdf(
+                        incident_form_data,
+                        incident_field_list,
+                        "Operator Incident Report",
+                        filename,
+                        operator_signature_img=operator_signature,
+                        supervisor_signature_img=supervisor_signature
+                    )
+                    # st.write("DEBUG: PDF generated:", filename)
+                except Exception as e:
+                    st.error(f"Failed to generate PDF: {e}")
+                    st.error(f"Failed to generate PDF: {e}")
+                    filename = None
+
+                # 3. Send Email (only if PDF was created)
+                if filename:
+                    subject = f"Incident Report: {incident_form_data['operator_name']} on {incident_form_data['date']} for Brief # {incident_form_data['brief']}"
+                    body = f"""
+                    An incident report has been submitted.
+
+                    Operator: {incident_form_data['operator_name']}
+                    Date: {incident_form_data['date']}
+                    Brief: {incident_form_data['brief']}
+                    
+                    See attached PDF for details.
+                    """
+                    try:
+                        success, error = send_pdf_email(
+                            filename,
+                            incident_form_data,
+                            subject,
+                            body,
+                            to_email=st.secrets["to_emails"],
+                            cc_emails=st.secrets["cc_emails"]
+                        )
+                        # st.write("DEBUG: Email send result:", success, error)
+                        if not success:
+                            st.error(f"Failed to send email: {error}")
+                    except Exception as e:
+                        st.error(f"Failed to send email: {e}")          
+                        # st.write("DEBUG: Email error:", e)
+                st.session_state["incident_form_data"] = incident_form_data
+                st.session_state["incident_submitted"] = True
+                # st.write("DEBUG: Setting incident_submitted to True and rerunning.")
+                st.rerun()
             
         # Clear button (inside form, but outside submit logic)
         if st.button("Clear", key="incident_clear_bottom"):
