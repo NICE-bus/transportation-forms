@@ -535,6 +535,7 @@ def show_incident_form():
                     "incident_location": ("Location of incident", incident_location),
                     "explanation_of_incident": ("Explain what happened", explanation_of_incident),
                     "incident_signed_sqm_name": ("Signed SQM Name", signed_sqm_name),
+                    "incident_supervisor_signature": ("Supervisor Signature", supervisor_signature)
                 }
 
                 # Check for missing required fields
