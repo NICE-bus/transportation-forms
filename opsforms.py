@@ -548,7 +548,7 @@ def show_incident_form():
                     # st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
                     st.session_state['submit_error_incident'] = f"Please fill in all required fields: {', '.join(missing_fields.values())}"
                     st.rerun() # Rerun the app to display the highlights
-                elif not is_signature_present(operator_signature.image_data):
+                elif is_signature_present(operator_signature.image_data):
                     # st.error("Operator signature is required.")
                     st.caption(":red[Operator signature is required.]")
                     # Here, also add the key of the error to the session state for the conditional display to pick up on.
