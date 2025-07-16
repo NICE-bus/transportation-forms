@@ -549,8 +549,8 @@ def show_incident_form():
                 missing_fields = {
                     key: label for key, (label, value) in incident_required_fields.items()
                     if (
-                        (key == "operator_signature" and not is_signature_present(value.operator_signature.image_data)) or
-                        (key == "supervisor_signature" and not is_signature_present(value.supervisor_signature.image_data)) or
+                        (key == "operator_signature" and not is_signature_present(value.image_data)) or
+                        (key == "supervisor_signature" and not is_signature_present(value.image_data)) or
                         (key not in ["operator_signature", "supervisor_signature"] and not value)
                     )
                 }
