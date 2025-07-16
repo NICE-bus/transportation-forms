@@ -500,6 +500,7 @@ def show_incident_form():
             )
 
             st.write("Supervisor Signature below:")
+            highlight_missing_field("incident_supervisor_signature", "incident")
             supervisor_signature = st_canvas(
                 fill_color="rgba(255, 165, 0, 0.3)",
                 stroke_width=2,
