@@ -31,7 +31,7 @@ def display_submit_button_error(form_type, message):
     """Displays a styled message above the submit button for a specific form."""
     session_key = f"submit_error_{form_type}"
     if st.session_state.get(session_key):
-        st.markdown(f''':red-background[{message}]:arrow_up:''')
+        st.markdown(f''':red-background[{message}]''')
 
 # Helper Functions
 
@@ -546,7 +546,7 @@ def show_incident_form():
                     # st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
                     st.session_state['submit_error_incident'] = f"Please fill in all required fields: {', '.join(missing_fields.values())}"
                     st.rerun() # Rerun the app to display the highlights
-                elif not is_signature_present(operator_signature.image_data):
+                elif is_signature_present(operator_signature.image_data):
                     st.error("Operator signature is required.")
                 elif not is_signature_present(supervisor_signature.image_data):
                     st.error("Supervisor signature is required.")
