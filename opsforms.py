@@ -34,7 +34,7 @@ def display_submit_button_error(form_type, required_fields):
     if missing_keys:
         missing_labels = [required_fields[key][0] for key in missing_keys if key in required_fields]
         st.markdown(
-            f''':red-background[Please fill in all required fields: {", ".join(missing_labels)}]''',
+            f''':red-background[PLEASE FILL IN ALL REQUIRED FIELDS: {", ".join(missing_labels)}]''',
             unsafe_allow_html=True
         )
 
