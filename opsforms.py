@@ -487,6 +487,7 @@ def show_incident_form():
                 key="explanation_of_incident"
             )
             st.write("Operator Signature below:")
+            highlight_missing_field("operator_signature", "incident")
             operator_signature = st_canvas(
                 fill_color="rgba(255, 165, 0, 0.3)",
                 stroke_width=2,
@@ -505,6 +506,7 @@ def show_incident_form():
             )
 
             st.write("Supervisor Signature below:")
+            highlight_missing_field("supervisor_signature", "incident")
             supervisor_signature = st_canvas(
                 fill_color="rgba(255, 165, 0, 0.3)",
                 stroke_width=2,
@@ -533,6 +535,8 @@ def show_incident_form():
                 "incident_location": ("Location of incident", incident_location),
                 "explanation_of_incident": ("Explain what happened", explanation_of_incident),
                 "incident_signed_sqm_name": ("Signed SQM Name", signed_sqm_name),
+                "operator_signature": ("Operator Signature", None),
+                "supervisor_signature": ("Supervisor Signature", None),
             }
             
             
@@ -546,18 +550,18 @@ def show_incident_form():
                 missing_fields = {key: label for key, (label, value) in incident_required_fields.items() if not value}
 
                 if missing_fields:
-                    # Store the keys of missing fields in session state
                     st.session_state['missing_incident_fields'] = list(missing_fields.keys())
-                    # Display a general error message with the labels of missing fields
-                    # st.error(f"Please fill in all required fields: {', '.join(missing_fields.values())}")
-                    # st.session_state['submit_error_incident'] = f"Please fill in all required fields: {', '.join(missing_fields.values())}"
-                    st.rerun() # Rerun the app to display the highlights
+                    st.rerun()
                 elif not is_signature_present(operator_signature.image_data):
-                    st.error("Operator signature is required.")
+                    # Add operator signature to missing fields
+                    st.session_state['missing_incident_fields'] = st.session_state.get('missing_incident_fields', []) + ["operator_signature"]
+                    st.rerun()
                 elif not is_signature_present(supervisor_signature.image_data):
-                    st.error("Supervisor signature is required.")
+                    # Add supervisor signature to missing fields
+                    st.session_state['missing_incident_fields'] = st.session_state.get('missing_incident_fields', []) + ["supervisor_signature"]
+                    st.rerun()
                 else:
-                    # On successful validation, clear any previous missing field flags
+                    # Clear missing fields on success
                     st.session_state['missing_incident_fields'] = []
                     st.session_state['submit_error_incident'] = ""
                     incident_form_data = {
