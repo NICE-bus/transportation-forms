@@ -31,7 +31,7 @@ def display_submit_button_error(form_type, message):
     """Displays a styled message above the submit button for a specific form."""
     session_key = f"submit_error_{form_type}"
     if st.session_state.get(session_key):
-        st.markdown(f''':red-background[{message}]''')
+        st.markdown(f''':red-background[{message}]:arrow_up:''')
 
 # Helper Functions
 
