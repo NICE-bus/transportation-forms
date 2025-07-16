@@ -500,7 +500,6 @@ def show_incident_form():
             )
 
             st.write("Supervisor Signature below:")
-            highlight_missing_field("incident_supervisor_signature", "incident")
             supervisor_signature = st_canvas(
                 fill_color="rgba(255, 165, 0, 0.3)",
                 stroke_width=2,
@@ -535,7 +534,6 @@ def show_incident_form():
                     "incident_location": ("Location of incident", incident_location),
                     "explanation_of_incident": ("Explain what happened", explanation_of_incident),
                     "incident_signed_sqm_name": ("Signed SQM Name", signed_sqm_name),
-                    "incident_supervisor_signature": ("Supervisor Signature", supervisor_signature)
                 }
 
                 # Check for missing required fields
