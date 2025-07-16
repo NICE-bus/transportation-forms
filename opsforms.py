@@ -547,23 +547,26 @@ def show_incident_form():
             if submitted:
 
                 # Check for missing required fields
-                missing_fields = {key: label for key, (label, value) in incident_required_fields.items() if not value}
+                # After submitted = st.form_submit_button("Submit Incident Report")
+                if submitted:
+                    # Build missing fields dictionary, including signatures
+                    missing_fields = {
+                        key: label for key, (label, value) in incident_required_fields.items()
+                        if (
+                            (key == "operator_signature" and not is_signature_present(operator_signature.image_data)) or
+                            (key == "supervisor_signature" and not is_signature_present(supervisor_signature.image_data)) or
+                            (key not in ["operator_signature", "supervisor_signature"] and not value)
+                        )
+                    }
 
-                if missing_fields:
-                    st.session_state['missing_incident_fields'] = list(missing_fields.keys())
-                    st.rerun()
-                elif not is_signature_present(operator_signature.image_data):
-                    # Add operator signature to missing fields
-                    st.session_state['missing_incident_fields'] = st.session_state.get('missing_incident_fields', []) + ["operator_signature"]
-                    st.rerun()
-                elif not is_signature_present(supervisor_signature.image_data):
-                    # Add supervisor signature to missing fields
-                    st.session_state['missing_incident_fields'] = st.session_state.get('missing_incident_fields', []) + ["supervisor_signature"]
-                    st.rerun()
-                else:
-                    # Clear missing fields on success
-                    st.session_state['missing_incident_fields'] = []
-                    st.session_state['submit_error_incident'] = ""
+                    if missing_fields:
+                        st.session_state['missing_incident_fields'] = list(missing_fields.keys())
+                        st.rerun()
+                    else:
+                        # Clear missing fields on success
+                        st.session_state['missing_incident_fields'] = []
+                        st.session_state['submit_error_incident'] = ""
+
                     incident_form_data = {
                         "date": date,
                         "time": time,
