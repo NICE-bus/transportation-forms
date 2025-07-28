@@ -7,3 +7,5 @@ reportlab
 Pillow
 numpy
 yagmail
+msal
+requests
