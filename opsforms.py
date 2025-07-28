@@ -47,7 +47,7 @@ def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None)
     tenant_id = st.secrets["tenant_id"]
     client_id = st.secrets["client_id"]
     client_secret = st.secrets["client_secret"]
-    sender_email = st.secrets.["email_user"]
+    sender_email = st.secrets["email_user"]
 
     if not all([tenant_id, client_id, client_secret, sender_email]):
         st.error("Azure App credentials (tenant_id, client_id, client_secret) and sender email are not set in secrets.")
