@@ -251,47 +251,30 @@ def save_submission_pdf(data, field_list, pdf_title, filename, operator_signatur
         if operator_signature_img is not None:
             c.setFont("Helvetica-Bold", 12)
             c.drawString(72, y, "Operator Signature:")
-            image_bottom_y = y - 15 - pdf_sig_height
             processed_img = process_signature_img(operator_signature_img)
-            inverted_img = ImageOps.invert(processed_img)
-            smooth_img = inverted_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
-            buf = io.BytesIO()
-            smooth_img.save(buf, format="PNG")
-            buf.seek(0)
-            img_reader = ImageReader(buf)
-            c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
             if processed_img:
+                image_bottom_y = y - 15 - pdf_sig_height
                 smooth_img = processed_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
                 buf = io.BytesIO()
                 smooth_img.save(buf, format="PNG")
                 buf.seek(0)
                 img_reader = ImageReader(buf)
                 c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
-            y = image_bottom_y - 30
-
+                y = image_bottom_y - 30
 
         if supervisor_signature_img is not None:
             c.setFont("Helvetica-Bold", 12)
             c.drawString(72, y, "Supervisor Signature:")
-            image_bottom_y = y - 15 - pdf_sig_height
             processed_img = process_signature_img(supervisor_signature_img)
-            inverted_img = ImageOps.invert(processed_img)
-            smooth_img = inverted_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
-            buf = io.BytesIO()
-            smooth_img.save(buf, format="PNG")
-            buf.seek(0)
-            img_reader = ImageReader(buf)
-            c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
-            y = image_bottom_y - 30
             if processed_img:
+                image_bottom_y = y - 15 - pdf_sig_height
                 smooth_img = processed_img.resize((pdf_sig_width, pdf_sig_height), Image.LANCZOS)
                 buf = io.BytesIO()
                 smooth_img.save(buf, format="PNG")
                 buf.seek(0)
                 img_reader = ImageReader(buf)
                 c.drawImage(img_reader, 72, image_bottom_y, width=pdf_sig_width, height=pdf_sig_height, mask='auto')
-            y = image_bottom_y - 3
-
+                y = image_bottom_y - 3
     c.save()
     # st.write("DEBUG: PDF saved:", filename)
     return filename
@@ -732,18 +715,19 @@ def show_incident_form():
                             subject,
                             body,
                             to_email=st.secrets["to_emails"],
-                            cc_emails=st.secrets["cc_emails"]
+                            cc_emails=st.secrets.get("cc_emails")
                         )
-                        # st.write("DEBUG: Email send result:", success, error)
+                        st.write(f"DEBUG: Email send function returned: success={success}, error='{error}'")
                         if not success:
                             st.error(f"Failed to send email: {error}")
                     except Exception as e:
-                        st.error(f"Failed to send email: {e}")          
+                        st.error(f"An exception occurred while trying to send email: {e}")
                         # st.write("DEBUG: Email error:", e)
                 st.session_state["incident_form_data"] = incident_form_data
                 st.session_state["incident_submitted"] = True
                 # st.write("DEBUG: Setting incident_submitted to True and rerunning.")
-                st.rerun()
+                st.warning("DEBUG: Rerun is disabled. The app has finished processing this submission.")
+                # st.rerun()
             
         # Clear button (inside form, but outside submit logic)
         if st.button("Clear", key="incident_clear_bottom"):
@@ -984,18 +968,19 @@ def show_pay_exception_form():
                                 subject,
                                 body,
                                 to_email=st.secrets["to_emails"],
-                                cc_emails=st.secrets["cc_emails"]
+                                cc_emails=st.secrets.get("cc_emails")
                             )
-                            # st.write("DEBUG: Email send result:", success, error)
+                            st.write(f"DEBUG: Email send function returned: success={success}, error='{error}'")
                             if not success:
                                 st.error(f"Failed to send email: {error}")
                         except Exception as e:
-                            st.error(f"Failed to send email: {e}")
+                            st.error(f"An exception occurred while trying to send email: {e}")
                             # st.write("DEBUG: Email error:", e)
                     st.session_state["pay_form_data"] = pay_form_data
                     st.session_state["pay_exception_submitted"] = True
                     # st.write("DEBUG: Setting pay_exception_submitted to True and rerunning.")
-                    st.rerun()
+                    st.warning("DEBUG: Rerun is disabled. The app has finished processing this submission.")
+                    # st.rerun()
             
         if st.button("Clear", key="pay_exception_clear_bottom"):
             # st.write("DEBUG: Pay Exception form Clear button pressed.")
