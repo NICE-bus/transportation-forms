@@ -45,7 +45,7 @@ def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None)
     """Sends an email with a PDF attachment using Microsoft Graph API and OAuth."""
     # 1. Get credentials from secrets
     tenant_id = st.secrets["tenant_id"]
-    client_id = st.secrets.["client_id"]
+    client_id = st.secrets["client_id"]
     client_secret = st.secrets["client_secret"]
     sender_email = st.secrets.["email_user"]
 
