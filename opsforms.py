@@ -43,15 +43,21 @@ def display_submit_button_error(form_type, required_fields):
 # Helper Functions
 def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None):
     """Sends an email with a PDF attachment using Microsoft Graph API and OAuth."""
+    st.info("Attempting to send email...")
+
     # 1. Get credentials from secrets
-    tenant_id = st.secrets["tenant_id"]
-    client_id = st.secrets["client_id"]
-    client_secret = st.secrets["client_secret"]
-    sender_email = st.secrets["email_user"]
+    # Streamlit converts all secret keys to lowercase. Use .get() to avoid errors if a key is missing.
+    tenant_id = st.secrets.get("tenant_id")
+    client_id = st.secrets.get("client_id")
+    client_secret = st.secrets.get("client_secret")
+    sender_email = st.secrets.get("email_user")
 
     if not all([tenant_id, client_id, client_secret, sender_email]):
-        st.error("Azure App credentials (tenant_id, client_id, client_secret) and sender email are not set in secrets.")
-        return False, "Azure App credentials are not set."
+        error_msg = "Azure App credentials (tenant_id, client_id, client_secret) and sender email (email_user) are not set correctly in secrets."
+        st.error(error_msg)
+        return False, error_msg
+
+    st.info("✅ Credentials loaded successfully.")
 
     # 2. Authenticate and get an access token
     authority = f"https://login.microsoftonline.com/{tenant_id}"
@@ -63,10 +69,12 @@ def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None)
 
     if "access_token" not in result:
         error_description = result.get("error_description", "No error description provided.")
-        st.error(f"Failed to acquire access token: {error_description}")
-        return False, f"Authentication failed: {error_description}"
+        error_msg = f"Failed to acquire access token: {error_description}"
+        st.error(error_msg)
+        return False, error_msg
 
     access_token = result["access_token"]
+    st.info("✅ Access token acquired.")
 
     # 3. Prepare the email payload for Graph API
     # Read and base64-encode the attachment
@@ -106,6 +114,7 @@ def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None)
         },
         "saveToSentItems": "true"
     }
+    st.info("✅ Email payload and attachment prepared.")
 
     # 4. Send the email via Graph API
     graph_endpoint = f"https://graph.microsoft.com/v1.0/users/{sender_email}/sendMail"
@@ -115,8 +124,10 @@ def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None)
     }
 
     try:
+        st.info("Sending email via Microsoft Graph API...")
         response = requests.post(graph_endpoint, headers=headers, json=email_payload)
         response.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
+        st.info(f"✅ Email sent successfully (API returned status {response.status_code}).")
         return True, None # A 202 Accepted status code means success
     except requests.exceptions.HTTPError as e:
         try:
@@ -124,8 +135,10 @@ def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None)
             error_message = error_details.get("error", {}).get("message", e.response.text)
         except Exception:
             error_message = e.response.text
+        st.error(f"API Error: {error_message}")
         return False, f"API Error: {error_message}"
     except Exception as e:
+        st.error(f"An unexpected error occurred: {e}")
         return False, str(e)
 
 def serialize_value(val):
