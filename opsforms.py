@@ -9,7 +9,9 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas as pdf_canvas
 from reportlab.lib.utils import ImageReader, simpleSplit
 import numpy as np
-import yagmail
+import msal
+import requests
+import base64
 
 # --- Hide Streamlit Style ---
 hide_streamlit_style = """
@@ -39,28 +41,91 @@ def display_submit_button_error(form_type, required_fields):
         )
 
 # Helper Functions
-
 def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None):
-    # st.write("DEBUG: Preparing to send email with PDF:", pdf_file)
-    sender_email = st.secrets["email_user"]
-    sender_password = st.secrets["email_password"]
-    if not sender_email or not sender_password:
-        st.error("Email credentials are not set in secrets.")
-        return False, "Email credentials are not set."
+    """Sends an email with a PDF attachment using Microsoft Graph API and OAuth."""
+    # 1. Get credentials from secrets
+    tenant_id = st.secrets["tenant_id"]
+    client_id = st.secrets.["client_id"]
+    client_secret = st.secrets["client_secret"]
+    sender_email = st.secrets.["email_user"]
+
+    if not all([tenant_id, client_id, client_secret, sender_email]):
+        st.error("Azure App credentials (tenant_id, client_id, client_secret) and sender email are not set in secrets.")
+        return False, "Azure App credentials are not set."
+
+    # 2. Authenticate and get an access token
+    authority = f"https://login.microsoftonline.com/{tenant_id}"
+    app = msal.ConfidentialClientApplication(
+        client_id, authority=authority, client_credential=client_secret
+    )
+    scopes = ["https://graph.microsoft.com/.default"]
+    result = app.acquire_token_for_client(scopes=scopes)
+
+    if "access_token" not in result:
+        error_description = result.get("error_description", "No error description provided.")
+        st.error(f"Failed to acquire access token: {error_description}")
+        return False, f"Authentication failed: {error_description}"
+
+    access_token = result["access_token"]
+
+    # 3. Prepare the email payload for Graph API
+    # Read and base64-encode the attachment
+    with open(pdf_file, "rb") as f:
+        attachment_content = base64.b64encode(f.read()).decode('utf-8')
+
+    # Format recipients
+    to_recipients = [{"emailAddress": {"address": email.strip()}} for email in to_email.split(',')]
+    cc_recipients = []
+    if cc_emails:
+        if isinstance(cc_emails, str):
+            cc_emails = [e.strip() for e in cc_emails.split(',')]
+        cc_recipients = [{"emailAddress": {"address": email}} for email in cc_emails]
+
+    email_payload = {
+        "message": {
+            "subject": subject,
+            "body": {
+                "contentType": "HTML",
+                "content": body.replace('\n', '<br>')
+            },
+            "toRecipients": to_recipients,
+            "ccRecipients": cc_recipients,
+            "from": {
+                "emailAddress": {
+                    "address": sender_email
+                }
+            },
+            "attachments": [
+                {
+                    "@odata.type": "#microsoft.graph.fileAttachment",
+                    "name": pdf_file,
+                    "contentType": "application/pdf",
+                    "contentBytes": attachment_content
+                }
+            ]
+        },
+        "saveToSentItems": "true"
+    }
+
+    # 4. Send the email via Graph API
+    graph_endpoint = f"https://graph.microsoft.com/v1.0/users/{sender_email}/sendMail"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
     try:
-        yag = yagmail.SMTP(user=sender_email, password=sender_password)
-        # st.write("DEBUG: Yagmail SMTP object created.")
-        yag.send(
-            to=to_email,
-            cc=cc_emails,
-            subject=subject,
-            contents=body,
-            attachments=[pdf_file]
-        )
-        # st.write("DEBUG: Email sent successfully.")
-        return True, None
+        response = requests.post(graph_endpoint, headers=headers, json=email_payload)
+        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
+        return True, None # A 202 Accepted status code means success
+    except requests.exceptions.HTTPError as e:
+        try:
+            error_details = e.response.json()
+            error_message = error_details.get("error", {}).get("message", e.response.text)
+        except Exception:
+            error_message = e.response.text
+        return False, f"API Error: {error_message}"
     except Exception as e:
-        # st.write("DEBUG: Email send error:", e)
         return False, str(e)
 
 def serialize_value(val):
