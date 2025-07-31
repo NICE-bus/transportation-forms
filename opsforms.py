@@ -148,6 +148,25 @@ def send_pdf_email(pdf_file, subject, body, to_email, cc_emails=None):
         st.error(f"An unexpected error occurred: {e}")
         return False, str(e)
 
+def validate_form(required_fields):
+    """
+    Validates required text fields and signature canvases.
+    Returns a dictionary of missing fields.
+    """
+    missing_fields = {}
+    for key, (label, value) in required_fields.items():
+        is_signature = "signature" in key
+        is_missing = False
+
+        if is_signature and not is_signature_present(value.image_data):
+            is_missing = True
+        elif not is_signature and not value:
+            is_missing = True
+        
+        if is_missing:
+            missing_fields[key] = label
+    return missing_fields
+
 def serialize_value(val):
     if isinstance(val, (datetime.date, datetime.datetime)):
         return val.isoformat()
@@ -613,16 +632,9 @@ def show_incident_form():
             
             submitted = st.form_submit_button("Submit Incident Report")
             if submitted:
-
-                missing_fields = {
-                    key: label for key, (label, value) in incident_required_fields.items()
-                    if (
-                        (key == "operator_signature" and not is_signature_present(value.image_data)) or
-                        (key == "supervisor_signature" and not is_signature_present(value.image_data)) or
-                        (key not in ["operator_signature", "supervisor_signature"] and not value)
-                    )
-                }
-
+                
+                missing_fields = validate_form(incident_required_fields)
+                
                 if missing_fields:
                     st.session_state['missing_incident_fields'] = list(missing_fields.keys())
                     st.rerun()
@@ -878,15 +890,8 @@ def show_pay_exception_form():
             submitted = st.form_submit_button("Submit Pay Exception Form")
             
             if submitted:                
-                missing_fields = {
-                    key: label for key, (label, value) in pay_required_fields.items()
-                    if (
-                        (key == "pay_operator_signature" and not is_signature_present(value.image_data)) or
-                        (key == "pay_supervisor_signature" and not is_signature_present(value.image_data)) or
-                        (key not in ["pay_operator_signature", "pay_supervisor_signature"] and not value)
-                    )
-                }
-
+                missing_fields = validate_form(pay_required_fields)
+                
                 if missing_fields:
                     st.session_state['missing_pay_exception_fields'] = list(missing_fields.keys())
                     st.rerun()
