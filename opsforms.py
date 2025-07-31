@@ -130,13 +130,15 @@ def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None)
         st.info(f"✅ Email sent successfully (API returned status {response.status_code}).")
         return True, None # A 202 Accepted status code means success
     except requests.exceptions.HTTPError as e:
+        status_code = e.response.status_code
         try:
             error_details = e.response.json()
             error_message = error_details.get("error", {}).get("message", e.response.text)
         except Exception:
             error_message = e.response.text
-        st.error(f"API Error: {error_message}")
-        return False, f"API Error: {error_message}"
+        full_error = f"API Error (Status {status_code}): {error_message}"
+        st.error(full_error)
+        return False, full_error
     except Exception as e:
         st.error(f"An unexpected error occurred: {e}")
         return False, str(e)
