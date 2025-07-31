@@ -41,7 +41,7 @@ def display_submit_button_error(form_type, required_fields):
         )
 
 # Helper Functions
-def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None):
+def send_pdf_email(pdf_file, subject, body, to_email, cc_emails=None):
     """Sends an email with a PDF attachment using Microsoft Graph API and OAuth."""
     st.info("Attempting to send email...")
 
@@ -51,6 +51,11 @@ def send_pdf_email(pdf_file, form_data, subject, body, to_email, cc_emails=None)
     client_id = st.secrets.get("client_id")
     client_secret = st.secrets.get("client_secret")
     sender_email = st.secrets.get("email_user")
+
+    if not to_email:
+        error_msg = "Recipient email address (to_emails) is not set correctly in secrets."
+        st.error(error_msg)
+        return False, error_msg
 
     if not all([tenant_id, client_id, client_secret, sender_email]):
         error_msg = "Azure App credentials (tenant_id, client_id, client_secret) and sender email (email_user) are not set correctly in secrets."
@@ -713,10 +718,9 @@ def show_incident_form():
                     try:
                         success, error = send_pdf_email(
                             filename,
-                            incident_form_data,
                             subject,
                             body,
-                            to_email=st.secrets["to_emails"],
+                            to_email=st.secrets.get("to_emails"),
                             cc_emails=st.secrets.get("cc_emails")
                         )
                         st.write(f"DEBUG: Email send function returned: success={success}, error='{error}'")
@@ -966,10 +970,9 @@ def show_pay_exception_form():
                         try:
                             success, error = send_pdf_email(
                                 filename,
-                                pay_form_data,
                                 subject,
                                 body,
-                                to_email=st.secrets["to_emails"],
+                                to_email=st.secrets.get("to_emails"),
                                 cc_emails=st.secrets.get("cc_emails")
                             )
                             st.write(f"DEBUG: Email send function returned: success={success}, error='{error}'")
