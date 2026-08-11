@@ -15,6 +15,9 @@ import base64
 import smtplib
 from email.message import EmailMessage
 import os
+import threading
+import queue
+import tempfile
 
 
 # --- Hide Streamlit Style ---
@@ -152,7 +155,7 @@ def send_pdf_email_graph(pdf_file, subject, body, to_email, cc_emails=None):
         st.error(f"An unexpected error occurred: {e}")
         return False, str(e)
 
-def send_pdf_email_google_smtp(pdf_file, subject, body, to_email, cc_emails=None):
+def send_pdf_email_google_smtp(pdf_file, subject, body, to_email, cc_emails=None, notify_user=True):
     """Sends an email with a PDF attachment using Gmail SMTP and an app password."""
     gspread_section = st.secrets.get("gspread_creds", {})
     sender_email = (
@@ -170,7 +173,8 @@ def send_pdf_email_google_smtp(pdf_file, subject, body, to_email, cc_emails=None
 
     if not to_email:
         error_msg = "Recipient email address (to_emails) is not set correctly in secrets."
-        st.error(error_msg)
+        if notify_user:
+            st.error(error_msg)
         return False, error_msg
 
     if not sender_email or not app_password:
@@ -179,7 +183,8 @@ def send_pdf_email_google_smtp(pdf_file, subject, body, to_email, cc_emails=None
             "gmail_user/gmail_app_password or "
             "google_email_user/google_email_app_password in secrets."
         )
-        st.error(error_msg)
+        if notify_user:
+            st.error(error_msg)
         return False, error_msg
 
     to_list = [email.strip() for email in to_email.split(',') if email.strip()]
@@ -213,14 +218,16 @@ def send_pdf_email_google_smtp(pdf_file, subject, body, to_email, cc_emails=None
             server.login(sender_email, app_password)
             server.send_message(msg)
 
-        st.info("✅ Email sent successfully via Google SMTP.")
+        if notify_user:
+            st.info("✅ Email sent successfully via Google SMTP.")
         return True, None
     except Exception as e:
         error_msg = f"Google SMTP email failed: {e}"
-        st.error(error_msg)
+        if notify_user:
+            st.error(error_msg)
         return False, error_msg
 
-def send_pdf_email(pdf_file, subject, body, to_email, cc_emails=None):
+def send_pdf_email(pdf_file, subject, body, to_email, cc_emails=None, notify_user=True):
     """Sends an email using the configured backend.
 
     Backend secret keys supported:
@@ -241,7 +248,7 @@ def send_pdf_email(pdf_file, subject, body, to_email, cc_emails=None):
     )
     if backend == "ms_graph":
         return send_pdf_email_graph(pdf_file, subject, body, to_email, cc_emails)
-    return send_pdf_email_google_smtp(pdf_file, subject, body, to_email, cc_emails)
+    return send_pdf_email_google_smtp(pdf_file, subject, body, to_email, cc_emails, notify_user=notify_user)
 
 def serialize_value(val):
     if isinstance(val, (datetime.date, datetime.datetime)):
@@ -262,25 +269,34 @@ def is_signature_present(image_data):
     # We check if any pixel has an alpha value greater than 0.
     return np.any(image_data[:, :, 3] > 0)
 
+@st.cache_resource(show_spinner=False)
+def get_forms_worksheet(worksheet_name):
+    """Cache worksheet handles to avoid reconnecting on each submit."""
+    client = gspread.service_account_from_dict(st.secrets["gspread_creds"])
+    return client.open("forms").worksheet(worksheet_name)
+
 def save_to_gsheet(data, worksheet_name, columns):
     # st.write(f"DEBUG: Saving to Google Sheet '{worksheet_name}' with columns:", columns)
     # st.write("DEBUG: Data to save:", data)
-    client = gspread.service_account_from_dict(st.secrets["gspread_creds"])
-    sheet = client.open("forms").worksheet(worksheet_name)
+    sheet = get_forms_worksheet(worksheet_name)
     row = [serialize_value(data.get(col, "")) for col in columns]
     # st.write("DEBUG: Row to append:", row)
     sheet.append_row(row)
     # st.write("DEBUG: Row appended to Google Sheet.")
 
-def process_signature_img(signature_canvas):
+def process_signature_img(signature_source):
     # st.write("DEBUG: Processing signature image.")
 
-    if signature_canvas.image_data is None:
+    image_data = signature_source
+    if hasattr(signature_source, "image_data"):
+        image_data = signature_source.image_data
+
+    if image_data is None:
         # st.write("DEBUG: No signature image data.")
         return None
 
     # Convert NumPy array to RGBA PIL Image
-    img_array = signature_canvas.image_data.astype(np.uint8)
+    img_array = image_data.astype(np.uint8)
     signature_img = Image.fromarray(img_array, mode="RGBA")
 
     # Create a white RGBA background
@@ -380,6 +396,81 @@ def save_submission_pdf(data, field_list, pdf_title, filename, operator_signatur
     c.save()
     # st.write("DEBUG: PDF saved:", filename)
     return filename
+
+def optimize_signature_data(image_data, target_width=400):
+    """Downscale signature canvas arrays before background processing."""
+    if image_data is None:
+        return None
+    height, width = image_data.shape[:2]
+    if width <= target_width:
+        return np.copy(image_data)
+    target_height = max(1, int(height * (target_width / width)))
+    img = Image.fromarray(image_data.astype(np.uint8), mode="RGBA")
+    resized = img.resize((target_width, target_height), Image.LANCZOS)
+    return np.array(resized)
+
+def process_pdf_and_email_async(
+    form_data,
+    field_list,
+    pdf_title,
+    output_filename,
+    operator_signature_data,
+    supervisor_signature_data,
+    email_subject,
+    email_body,
+    to_email,
+    cc_emails,
+):
+    """Background task for PDF generation and email delivery."""
+    temp_pdf_path = None
+    try:
+        with tempfile.NamedTemporaryFile(prefix="opsform_", suffix=".pdf", delete=False) as tmp_pdf:
+            temp_pdf_path = tmp_pdf.name
+
+        save_submission_pdf(
+            form_data,
+            field_list,
+            pdf_title,
+            temp_pdf_path,
+            operator_signature_img=operator_signature_data,
+            supervisor_signature_img=supervisor_signature_data,
+        )
+        send_pdf_email(
+            temp_pdf_path,
+            email_subject,
+            email_body,
+            to_email=to_email,
+            cc_emails=cc_emails,
+            notify_user=False,
+        )
+    except Exception as e:
+        # Logged to server console for support troubleshooting.
+        print(f"Background submit processing failed: {e}")
+    finally:
+        if temp_pdf_path and os.path.exists(temp_pdf_path):
+            try:
+                os.remove(temp_pdf_path)
+            except Exception:
+                pass
+
+def _submit_job_worker(job_queue):
+    """Single worker thread to process PDF/email jobs in order."""
+    while True:
+        job = job_queue.get()
+        try:
+            process_pdf_and_email_async(**job)
+        finally:
+            job_queue.task_done()
+
+@st.cache_resource(show_spinner=False)
+def get_submit_queue():
+    """Initialize one persistent background worker queue per app process."""
+    job_queue = queue.Queue()
+    threading.Thread(target=_submit_job_worker, args=(job_queue,), daemon=True).start()
+    return job_queue
+
+def enqueue_submission_job(**job):
+    get_submit_queue().put(job)
 
 incident_field_list = [
     ("Date", "date"),
@@ -791,49 +882,37 @@ def show_incident_form():
                     st.error(f"Failed to save to Google Sheet: {e}")
                     # st.write("DEBUG: Google Sheet error:", e)
 
-                # 2. Generate PDF
-                try:
-                    # For incident report
-                    filename = f"incident_{incident_form_data['operator_name']}_{incident_form_data['date']}_for_brief_{incident_form_data['brief']}.pdf"
-                    save_submission_pdf(
-                        incident_form_data,
-                        incident_field_list,
-                        "Operator Incident Report",
-                        filename,
-                        operator_signature_img=operator_signature,
-                        supervisor_signature_img=supervisor_signature
-                    )
-                    # st.write("DEBUG: PDF generated:", filename)
-                except Exception as e:
-                    st.error(f"Failed to generate PDF: {e}")
-                    st.error(f"Failed to generate PDF: {e}")
-                    filename = None
+                # 2/3. Generate PDF + send email in background for faster UX.
+                filename = f"incident_{incident_form_data['operator_name']}_{incident_form_data['date']}_for_brief_{incident_form_data['brief']}.pdf"
+                operator_signature_data = None
+                supervisor_signature_data = None
+                if operator_signature is not None and operator_signature.image_data is not None:
+                    operator_signature_data = optimize_signature_data(operator_signature.image_data)
+                if supervisor_signature is not None and supervisor_signature.image_data is not None:
+                    supervisor_signature_data = optimize_signature_data(supervisor_signature.image_data)
 
-                # 3. Send Email (only if PDF was created)
-                if filename:
-                    subject = f"Incident Report: {incident_form_data['operator_name']} on {incident_form_data['date']} for Brief # {incident_form_data['brief']}"
-                    body = f"""
-                    An incident report has been submitted.
+                subject = f"Incident Report: {incident_form_data['operator_name']} on {incident_form_data['date']} for Brief # {incident_form_data['brief']}"
+                body = f"""
+                An incident report has been submitted.
 
-                    Operator: {incident_form_data['operator_name']}
-                    Date: {incident_form_data['date']}
-                    Brief: {incident_form_data['brief']}
-                    
-                    See attached PDF for details.
-                    """
-                    try:
-                        success, error = send_pdf_email(
-                            filename,
-                            subject,
-                            body,
-                            to_email=st.secrets.get("to_emails"),
-                            cc_emails=st.secrets.get("cc_emails")
-                        )
-                        if not success:
-                            st.error(f"Failed to send email: {error}")
-                    except Exception as e:
-                        st.error(f"An exception occurred while trying to send email: {e}")
-                        # st.write("DEBUG: Email error:", e)
+                Operator: {incident_form_data['operator_name']}
+                Date: {incident_form_data['date']}
+                Brief: {incident_form_data['brief']}
+                
+                See attached PDF for details.
+                """
+                enqueue_submission_job(
+                    form_data=incident_form_data,
+                    field_list=incident_field_list,
+                    pdf_title="Operator Incident Report",
+                    output_filename=filename,
+                    operator_signature_data=operator_signature_data,
+                    supervisor_signature_data=supervisor_signature_data,
+                    email_subject=subject,
+                    email_body=body,
+                    to_email=st.secrets.get("to_emails"),
+                    cc_emails=st.secrets.get("cc_emails"),
+                )
                 st.session_state["incident_form_data"] = incident_form_data
                 st.session_state["incident_submitted"] = True
                 st.session_state["incident_submitting"] = False
@@ -851,7 +930,7 @@ def show_incident_form():
             st.rerun()
             
     else:
-        st.success("Incident Report submitted!")
+        st.success("Incident Report submitted. Confirmation email sent.")
         # st.write("DEBUG: Incident report submitted message shown.")
         if st.button("Clear", key="incident_clear_bottom"):
             # st.write("DEBUG: Incident form Clear button pressed (after submission).")
@@ -1054,49 +1133,38 @@ def show_pay_exception_form():
                     except Exception as e:
                         st.error(f"Failed to save to Google Sheet: {e}")
                         # st.write("DEBUG: Google Sheet error:", e)
-                        
-                    try:
-                        # For pay exception
-                        filename = f"pay_exception_{pay_form_data['name']}_{pay_form_data['date']}.pdf"
-                        save_submission_pdf(
-                            pay_form_data,
-                            pay_field_list,
-                            "Operator Pay Exception Form",
-                            filename,
-                            operator_signature_img=pay_operator_signature,
-                            supervisor_signature_img=pay_supervisor_signature
-                        )
-                        # st.write("DEBUG: PDF generated:", filename)
-                    except Exception as e:
-                        st.error(f"Failed to generate PDF: {e}")
-                        # st.write("DEBUG: PDF error:", e)
-                        filename = None
-                    
-                    # Send Email (only if PDF was created)    
-                    if filename:
-                        subject = f"Pay Exception Form: {pay_form_data['name']} on {pay_form_data['date']}"
-                        body = f"""
-                        A pay exception form has been submitted.
 
-                        Operator: {pay_form_data['name']}
-                        Date: {pay_form_data['date']}
-                        Run #: {pay_form_data['run']}
+                    # 2/3. Generate PDF + send email in background for faster UX.
+                    filename = f"pay_exception_{pay_form_data['name']}_{pay_form_data['date']}.pdf"
+                    pay_operator_signature_data = None
+                    pay_supervisor_signature_data = None
+                    if pay_operator_signature is not None and pay_operator_signature.image_data is not None:
+                        pay_operator_signature_data = optimize_signature_data(pay_operator_signature.image_data)
+                    if pay_supervisor_signature is not None and pay_supervisor_signature.image_data is not None:
+                        pay_supervisor_signature_data = optimize_signature_data(pay_supervisor_signature.image_data)
 
-                        See attached PDF for details.
-                        """
-                        try:
-                            success, error = send_pdf_email(
-                                filename,
-                                subject,
-                                body,
-                                to_email=st.secrets.get("to_emails"),
-                                cc_emails=st.secrets.get("cc_emails")
-                            )
-                            if not success:
-                                st.error(f"Failed to send email: {error}")
-                        except Exception as e:
-                            st.error(f"An exception occurred while trying to send email: {e}")
-                            # st.write("DEBUG: Email error:", e)
+                    subject = f"Pay Exception Form: {pay_form_data['name']} on {pay_form_data['date']}"
+                    body = f"""
+                    A pay exception form has been submitted.
+
+                    Operator: {pay_form_data['name']}
+                    Date: {pay_form_data['date']}
+                    Run #: {pay_form_data['run']}
+
+                    See attached PDF for details.
+                    """
+                    enqueue_submission_job(
+                        form_data=pay_form_data,
+                        field_list=pay_field_list,
+                        pdf_title="Operator Pay Exception Form",
+                        output_filename=filename,
+                        operator_signature_data=pay_operator_signature_data,
+                        supervisor_signature_data=pay_supervisor_signature_data,
+                        email_subject=subject,
+                        email_body=body,
+                        to_email=st.secrets.get("to_emails"),
+                        cc_emails=st.secrets.get("cc_emails"),
+                    )
                     st.session_state["pay_form_data"] = pay_form_data
                     st.session_state["pay_exception_submitted"] = True
                     st.session_state["pay_exception_submitting"] = False
@@ -1113,7 +1181,7 @@ def show_pay_exception_form():
             st.rerun()
             
     else:
-        st.success("Pay Exception Form submitted!")
+        st.success("Pay Exception Form submitted. Confirmation email sent.")
         # st.write("DEBUG: Pay Exception form submitted message shown.")
         if st.button("Clear", key="pay_exception_clear_bottom"):
             # st.write("DEBUG: Pay Exception form Clear button pressed (after submission).")
