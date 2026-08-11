@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 credentials.json
+.streamlit/secrets.toml
 *.pyc
 __pycache__/
 *.py[cod]

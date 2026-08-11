@@ -9,9 +9,12 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas as pdf_canvas
 from reportlab.lib.utils import ImageReader, simpleSplit
 import numpy as np
+import msal
+import requests
+import base64
 import smtplib
 from email.message import EmailMessage
-import base64
+import os
 
 
 # --- Hide Streamlit Style ---
@@ -42,54 +45,203 @@ def display_submit_button_error(form_type, required_fields):
         )
 
 # Helper Functions
-def send_pdf_email(
-    pdf_file,
-    subject,
-    body,
-    to_email,
-    cc_emails=None
-):
+def send_pdf_email_graph(pdf_file, subject, body, to_email, cc_emails=None):
+    """Sends an email with a PDF attachment using Microsoft Graph API and OAuth."""
+    st.info("Attempting to send email...")
+
+    # 1. Get credentials from secrets
+    # Streamlit converts all secret keys to lowercase. Use .get() to avoid errors if a key is missing.
+    tenant_id = st.secrets.get("tenant_id")
+    client_id = st.secrets.get("client_id")
+    client_secret = st.secrets.get("client_secret")
+    sender_email = st.secrets.get("email_user")
+
+    if not to_email:
+        error_msg = "Recipient email address (to_emails) is not set correctly in secrets."
+        st.error(error_msg)
+        return False, error_msg
+
+    if not all([tenant_id, client_id, client_secret, sender_email]):
+        error_msg = "Azure App credentials (tenant_id, client_id, client_secret) and sender email (email_user) are not set correctly in secrets."
+        st.error(error_msg)
+        return False, error_msg
+
+    st.info("✅ Credentials loaded successfully.")
+
+    # 2. Authenticate and get an access token
+    authority = f"https://login.microsoftonline.com/{tenant_id}"
+    app = msal.ConfidentialClientApplication(
+        client_id, authority=authority, client_credential=client_secret
+    )
+    scopes = ["https://graph.microsoft.com/.default"]
+    result = app.acquire_token_for_client(scopes=scopes)
+
+    if "access_token" not in result:
+        error_description = result.get("error_description", "No error description provided.")
+        error_msg = f"Failed to acquire access token: {error_description}"
+        st.error(error_msg)
+        return False, error_msg
+
+    access_token = result["access_token"]
+    st.info("✅ Access token acquired.")
+
+    # 3. Prepare the email payload for Graph API
+    # Read and base64-encode the attachment
+    with open(pdf_file, "rb") as f:
+        attachment_content = base64.b64encode(f.read()).decode('utf-8')
+
+    # Format recipients
+    to_recipients = [{"emailAddress": {"address": email.strip()}} for email in to_email.split(',')]
+    cc_recipients = []
+    if cc_emails:
+        if isinstance(cc_emails, str):
+            cc_emails = [e.strip() for e in cc_emails.split(',')]
+        cc_recipients = [{"emailAddress": {"address": email}} for email in cc_emails]
+
+    email_payload = {
+        "message": {
+            "subject": subject,
+            "body": {
+                "contentType": "HTML",
+                "content": body.replace('\n', '<br>')
+            },
+            "toRecipients": to_recipients,
+            "ccRecipients": cc_recipients,
+            "from": {
+                "emailAddress": {
+                    "address": sender_email
+                }
+            },
+            "attachments": [
+                {
+                    "@odata.type": "#microsoft.graph.fileAttachment",
+                    "name": pdf_file,
+                    "contentType": "application/pdf",
+                    "contentBytes": attachment_content
+                }
+            ]
+        },
+        "saveToSentItems": "true"
+    }
+    st.info("✅ Email payload and attachment prepared.")
+
+    # 4. Send the email via Graph API
+    graph_endpoint = f"https://graph.microsoft.com/v1.0/users/{sender_email}/sendMail"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
     try:
+        st.info("Sending email via Microsoft Graph API...")
+        response = requests.post(graph_endpoint, headers=headers, json=email_payload)
+        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
+        st.info(f"✅ Email sent successfully (API returned status {response.status_code}).")
+        return True, None # A 202 Accepted status code means success
+    except requests.exceptions.HTTPError as e:
+        status_code = e.response.status_code
+        try:
+            error_details = e.response.json()
+            error_message = error_details.get("error", {}).get("message", e.response.text)
+        except Exception:
+            error_message = e.response.text
+        full_error = f"API Error (Status {status_code}): {error_message}"
+        st.error(full_error)
+        return False, full_error
+    except Exception as e:
+        st.error(f"An unexpected error occurred: {e}")
+        return False, str(e)
 
-        gmail_user = st.secrets["gmail_user"]
-        gmail_password = st.secrets["gmail_app_password"]
+def send_pdf_email_google_smtp(pdf_file, subject, body, to_email, cc_emails=None):
+    """Sends an email with a PDF attachment using Gmail SMTP and an app password."""
+    gspread_section = st.secrets.get("gspread_creds", {})
+    sender_email = (
+        st.secrets.get("gmail_user")
+        or st.secrets.get("google_email_user")
+        or gspread_section.get("gmail_user")
+        or gspread_section.get("google_email_user")
+    )
+    app_password = (
+        st.secrets.get("gmail_app_password")
+        or st.secrets.get("google_email_app_password")
+        or gspread_section.get("gmail_app_password")
+        or gspread_section.get("google_email_app_password")
+    )
 
+    if not to_email:
+        error_msg = "Recipient email address (to_emails) is not set correctly in secrets."
+        st.error(error_msg)
+        return False, error_msg
+
+    if not sender_email or not app_password:
+        error_msg = (
+            "Google SMTP credentials are missing. Set either "
+            "gmail_user/gmail_app_password or "
+            "google_email_user/google_email_app_password in secrets."
+        )
+        st.error(error_msg)
+        return False, error_msg
+
+    to_list = [email.strip() for email in to_email.split(',') if email.strip()]
+    cc_list = []
+    if cc_emails:
+        if isinstance(cc_emails, str):
+            cc_list = [email.strip() for email in cc_emails.split(',') if email.strip()]
+        else:
+            cc_list = [email.strip() for email in cc_emails if email and email.strip()]
+
+    try:
         msg = EmailMessage()
-
-        msg["From"] = gmail_user
-        msg["To"] = to_email
         msg["Subject"] = subject
-
-        if cc_emails:
-            msg["Cc"] = cc_emails
-
+        msg["From"] = sender_email
+        msg["To"] = ", ".join(to_list)
+        if cc_list:
+            msg["Cc"] = ", ".join(cc_list)
         msg.set_content(body)
 
         with open(pdf_file, "rb") as f:
-            pdf_data = f.read()
-
+            pdf_bytes = f.read()
         msg.add_attachment(
-            pdf_data,
+            pdf_bytes,
             maintype="application",
             subtype="pdf",
-            filename=pdf_file
+            filename=os.path.basename(pdf_file),
         )
 
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-            smtp.starttls()
-            smtp.login(
-                gmail_user,
-                gmail_password
-            )
-            smtp.send_message(msg)
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=30) as server:
+            server.starttls()
+            server.login(sender_email, app_password)
+            server.send_message(msg)
 
-        st.success("Email sent via Gmail")
+        st.info("✅ Email sent successfully via Google SMTP.")
         return True, None
-
-
     except Exception as e:
-        st.error(f"Gmail Error: {e}")
-        return False, str(e)
+        error_msg = f"Google SMTP email failed: {e}"
+        st.error(error_msg)
+        return False, error_msg
+
+def send_pdf_email(pdf_file, subject, body, to_email, cc_emails=None):
+    """Sends an email using the configured backend.
+
+    Backend secret keys supported:
+    - email_backend
+    - gmail_backend
+
+    Backend values supported:
+    - google_smtp / gmail_smtp (default)
+    - ms_graph
+    """
+    gspread_section = st.secrets.get("gspread_creds", {})
+    backend = (
+        st.secrets.get("email_backend")
+        or st.secrets.get("gmail_backend")
+        or gspread_section.get("email_backend")
+        or gspread_section.get("gmail_backend")
+        or "google_smtp"
+    )
+    if backend == "ms_graph":
+        return send_pdf_email_graph(pdf_file, subject, body, to_email, cc_emails)
+    return send_pdf_email_google_smtp(pdf_file, subject, body, to_email, cc_emails)
 
 def serialize_value(val):
     if isinstance(val, (datetime.date, datetime.datetime)):
@@ -553,9 +705,19 @@ def show_incident_form():
             
             
             display_submit_button_error("incident", incident_required_fields)
-            
-            submitted = st.form_submit_button("Submit Incident Report")
-            if submitted:
+
+            is_incident_submitting = st.session_state.get("incident_submitting", False)
+            submitted = st.form_submit_button(
+                "Submitting form..." if is_incident_submitting else "Submit Incident Report",
+                disabled=is_incident_submitting,
+            )
+
+            if submitted and not is_incident_submitting:
+                st.session_state["incident_submitting"] = True
+                st.rerun()
+
+            if st.session_state.get("incident_submitting", False):
+                st.info("Submitting form...")
 
                 missing_fields = {
                     key: label for key, (label, value) in incident_required_fields.items()
@@ -568,6 +730,7 @@ def show_incident_form():
 
                 if missing_fields:
                     st.session_state['missing_incident_fields'] = list(missing_fields.keys())
+                    st.session_state["incident_submitting"] = False
                     st.rerun()
                 else:
                     # Clear missing fields on success
@@ -666,7 +829,6 @@ def show_incident_form():
                             to_email=st.secrets.get("to_emails"),
                             cc_emails=st.secrets.get("cc_emails")
                         )
-                        st.write(f"DEBUG: Email send function returned: success={success}, error='{error}'")
                         if not success:
                             st.error(f"Failed to send email: {error}")
                     except Exception as e:
@@ -674,9 +836,9 @@ def show_incident_form():
                         # st.write("DEBUG: Email error:", e)
                 st.session_state["incident_form_data"] = incident_form_data
                 st.session_state["incident_submitted"] = True
+                st.session_state["incident_submitting"] = False
                 # st.write("DEBUG: Setting incident_submitted to True and rerunning.")
-                st.warning("DEBUG: Rerun is disabled. The app has finished processing this submission.")
-                # st.rerun()
+                st.rerun()
             
         # Clear button (inside form, but outside submit logic)
         if st.button("Clear", key="incident_clear_bottom"):
@@ -817,10 +979,21 @@ def show_pay_exception_form():
             }
             
             display_submit_button_error("pay_exception", pay_required_fields)
-            
-            submitted = st.form_submit_button("Submit Pay Exception Form")
-            
-            if submitted:                
+
+            is_pay_submitting = st.session_state.get("pay_exception_submitting", False)
+            submitted = st.form_submit_button(
+                "Submitting form..." if is_pay_submitting else "Submit Pay Exception Form",
+                disabled=is_pay_submitting,
+            )
+
+            if submitted and not is_pay_submitting:
+                st.session_state["pay_exception_submitting"] = True
+                st.rerun()
+
+            if st.session_state.get("pay_exception_submitting", False):
+                st.info("Submitting form...")
+
+            if st.session_state.get("pay_exception_submitting", False):
                 missing_fields = {
                     key: label for key, (label, value) in pay_required_fields.items()
                     if (
@@ -832,6 +1005,7 @@ def show_pay_exception_form():
 
                 if missing_fields:
                     st.session_state['missing_pay_exception_fields'] = list(missing_fields.keys())
+                    st.session_state["pay_exception_submitting"] = False
                     st.rerun()
                 else:
                     st.session_state['missing_pay_exception_fields'] = []
@@ -918,7 +1092,6 @@ def show_pay_exception_form():
                                 to_email=st.secrets.get("to_emails"),
                                 cc_emails=st.secrets.get("cc_emails")
                             )
-                            st.write(f"DEBUG: Email send function returned: success={success}, error='{error}'")
                             if not success:
                                 st.error(f"Failed to send email: {error}")
                         except Exception as e:
@@ -926,9 +1099,9 @@ def show_pay_exception_form():
                             # st.write("DEBUG: Email error:", e)
                     st.session_state["pay_form_data"] = pay_form_data
                     st.session_state["pay_exception_submitted"] = True
+                    st.session_state["pay_exception_submitting"] = False
                     # st.write("DEBUG: Setting pay_exception_submitted to True and rerunning.")
-                    st.warning("DEBUG: Rerun is disabled. The app has finished processing this submission.")
-                    # st.rerun()
+                    st.rerun()
             
         if st.button("Clear", key="pay_exception_clear_bottom"):
             # st.write("DEBUG: Pay Exception form Clear button pressed.")
