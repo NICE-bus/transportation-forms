@@ -48,7 +48,7 @@ def display_submit_button_error(form_type, required_fields):
         )
 
 # Helper Functions
-def send_pdf_email_graph(pdf_file, subject, body, to_email, cc_emails=None):
+def send_pdf_email_graph(pdf_file, subject, body, to_email, cc_emails=None, bcc_emails=None):
     """Sends an email with a PDF attachment using Microsoft Graph API and OAuth."""
     st.info("Attempting to send email...")
 
@@ -100,6 +100,11 @@ def send_pdf_email_graph(pdf_file, subject, body, to_email, cc_emails=None):
         if isinstance(cc_emails, str):
             cc_emails = [e.strip() for e in cc_emails.split(',')]
         cc_recipients = [{"emailAddress": {"address": email}} for email in cc_emails]
+    bcc_recipients = []
+    if bcc_emails:
+        if isinstance(bcc_emails, str):
+            bcc_emails = [e.strip() for e in bcc_emails.split(',')]
+        bcc_recipients = [{"emailAddress": {"address": email}} for email in bcc_emails]
 
     email_payload = {
         "message": {
@@ -110,6 +115,7 @@ def send_pdf_email_graph(pdf_file, subject, body, to_email, cc_emails=None):
             },
             "toRecipients": to_recipients,
             "ccRecipients": cc_recipients,
+            "bccRecipients": bcc_recipients,
             "from": {
                 "emailAddress": {
                     "address": sender_email
@@ -155,7 +161,7 @@ def send_pdf_email_graph(pdf_file, subject, body, to_email, cc_emails=None):
         st.error(f"An unexpected error occurred: {e}")
         return False, str(e)
 
-def send_pdf_email_google_smtp(pdf_file, subject, body, to_email, cc_emails=None, notify_user=True):
+def send_pdf_email_google_smtp(pdf_file, subject, body, to_email, cc_emails=None, bcc_emails=None, notify_user=True):
     """Sends an email with a PDF attachment using Gmail SMTP and an app password."""
     gspread_section = st.secrets.get("gspread_creds", {})
     sender_email = (
@@ -194,6 +200,12 @@ def send_pdf_email_google_smtp(pdf_file, subject, body, to_email, cc_emails=None
             cc_list = [email.strip() for email in cc_emails.split(',') if email.strip()]
         else:
             cc_list = [email.strip() for email in cc_emails if email and email.strip()]
+    bcc_list = []
+    if bcc_emails:
+        if isinstance(bcc_emails, str):
+            bcc_list = [email.strip() for email in bcc_emails.split(',') if email.strip()]
+        else:
+            bcc_list = [email.strip() for email in bcc_emails if email and email.strip()]
 
     try:
         msg = EmailMessage()
@@ -202,6 +214,8 @@ def send_pdf_email_google_smtp(pdf_file, subject, body, to_email, cc_emails=None
         msg["To"] = ", ".join(to_list)
         if cc_list:
             msg["Cc"] = ", ".join(cc_list)
+        if bcc_list:
+            msg["Bcc"] = ", ".join(bcc_list)
         msg.set_content(body)
 
         with open(pdf_file, "rb") as f:
@@ -227,7 +241,7 @@ def send_pdf_email_google_smtp(pdf_file, subject, body, to_email, cc_emails=None
             st.error(error_msg)
         return False, error_msg
 
-def send_pdf_email(pdf_file, subject, body, to_email, cc_emails=None, notify_user=True):
+def send_pdf_email(pdf_file, subject, body, to_email, cc_emails=None, bcc_emails=None, notify_user=True):
     """Sends an email using the configured backend.
 
     Backend secret keys supported:
@@ -247,8 +261,16 @@ def send_pdf_email(pdf_file, subject, body, to_email, cc_emails=None, notify_use
         or "google_smtp"
     )
     if backend == "ms_graph":
-        return send_pdf_email_graph(pdf_file, subject, body, to_email, cc_emails)
-    return send_pdf_email_google_smtp(pdf_file, subject, body, to_email, cc_emails, notify_user=notify_user)
+        return send_pdf_email_graph(pdf_file, subject, body, to_email, cc_emails, bcc_emails)
+    return send_pdf_email_google_smtp(
+        pdf_file,
+        subject,
+        body,
+        to_email,
+        cc_emails,
+        bcc_emails,
+        notify_user=notify_user,
+    )
 
 def serialize_value(val):
     if isinstance(val, (datetime.date, datetime.datetime)):
@@ -420,6 +442,7 @@ def process_pdf_and_email_async(
     email_body,
     to_email,
     cc_emails,
+    bcc_emails,
 ):
     """Background task for PDF generation and email delivery."""
     temp_pdf_path = None
@@ -441,6 +464,7 @@ def process_pdf_and_email_async(
             email_body,
             to_email=to_email,
             cc_emails=cc_emails,
+            bcc_emails=bcc_emails,
             notify_user=False,
         )
     except Exception as e:
@@ -912,6 +936,7 @@ def show_incident_form():
                     email_body=body,
                     to_email=st.secrets.get("to_emails"),
                     cc_emails=st.secrets.get("cc_emails"),
+                    bcc_emails=st.secrets.get("bcc_emails"),
                 )
                 st.session_state["incident_form_data"] = incident_form_data
                 st.session_state["incident_submitted"] = True
@@ -1164,6 +1189,7 @@ def show_pay_exception_form():
                         email_body=body,
                         to_email=st.secrets.get("to_emails"),
                         cc_emails=st.secrets.get("cc_emails"),
+                        bcc_emails=st.secrets.get("bcc_emails"),
                     )
                     st.session_state["pay_form_data"] = pay_form_data
                     st.session_state["pay_exception_submitted"] = True
